@@ -34,7 +34,6 @@ library(ggplot2)
 
 ```
 
-
 ```{r wq data, include=F}
 ##loading in data
 current_wd <- getwd()
@@ -215,22 +214,25 @@ colors_list <- print(colors_list$colors)
 
 ```
 
-```{r figure, echo=F}
+```{r figure, echo=F, warning=F}
 bar_graph <- ggplot() +
   geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
            width=0.7, color="black", size=0.8, position="dodge", stat="identity") +
-  scale_fill_manual(name="Years", values=c("gray80", "#ACE5EE")) +
-   scale_x_discrete(labels=c("Acid neutralizing\ncapacity", "Dissolved oxygen", "pH",
-                             "Salinity", "Total nitrogen", "Total phosphorus", "Water temperature"))+
-  geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass, label=percent_pass, color=colors),
-            position="dodge", vjust=-0.5, size=4) +
+  scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
+  scale_x_discrete(labels=c("Acid neutralizing\ncapacity", "Dissolved oxygen", "pH",
+                             "Salinity", "Total nitrogen", "Total phosphorus", "Water temperature")) +
   xlab("Parameter") +
-  ylab("Percent Passing") +
+  ylab("% Passing") +
   coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 107), expand=F) +
+  geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, label=percent_pass, color=colors),
+            position=position_dodge2(width=0.7, preserve="total"), size=3) +
+  scale_color_manual(values=c("#FC8D62", "black"), guide="none") +
   theme_bw() +
-  theme(axis.text.x=element_text(color=colors_list, angle=40, vjust=0.5))
+  theme(axis.text.x=element_text(color=colors_list, angle=40, vjust=0.5, hjust=0.5))
 
-bar_graph
+#bar_graph
+
+ggplotly(bar_graph)
 
 ```
 
