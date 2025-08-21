@@ -1,0 +1,288 @@
+---
+title: |
+  | `r params$Year` Water Quality Annual Summary: 
+  | `r params$Park`, `r params$Site`
+output: pdf_document
+classoption:
+  - twocolumn
+params:
+  Park: "Prince William Forest Park"
+  Site: "Orenda Run"
+  Year: "2024"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load packages, include=F}
+##load packages
+library(tinytex)
+library(shiny)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(knitr)
+#install.packages("kableExtra")
+library(kableExtra)
+#install.packages("Rmoji")
+library(Rmoji)
+#install.packages("plotly")
+library(plotly)
+library(ggplot2)
+
+```
+
+
+```{r wq data, include=F}
+##loading in data
+current_wd <- getwd()
+setwd(current_wd)
+wq_data <- read.csv("wqp.csv")
+
+##selecting columns
+wq_data1 <- wq_data[, c("ActivityStartDate", "MonitoringLocationIdentifier",
+                       "MonitoringLocationName", "CharacteristicName", 
+                       "ResultMeasureValue", "ResultMeasure.MeasureUnitCode")]
+
+##converting date to date object
+wq_data1$ActivityStartDate <- as.Date(wq_data1$ActivityStartDate, format = "%Y-%m-%d")
+##extracting year
+wq_data1$year <- year(wq_data1$ActivityStartDate)
+
+##converting ResultMeasureValue to numeric object
+wq_data1$ResultMeasureValue <- as.numeric(wq_data1$ResultMeasureValue)
+
+##data wrangling
+wq_data2 <- wq_data1 %>%
+  na.omit() %>%
+  filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
+                                   "Total Nitrogen, mixed forms",
+                                   "Total Phosphorus, mixed forms",
+                                   "pH", "Dissolved oxygen (DO)",
+                                   "Salinity", "Temperature, water")) %>%
+  filter(year>2018) %>%
+  separate(MonitoringLocationIdentifier, c("Network", "Park", "Site")) %>%
+  select(ActivityStartDate, Park, Site, MonitoringLocationName, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, year) %>%
+  mutate(karst=case_when(Park=="ANTI" | Park=="HAFE" | Park=="MONO" ~ "karst",
+                         Park!="ANTI" | Park!="HAFE" | Park!="MONO" ~ "non-karst")) %>%
+  mutate(nutrient_ecoregion=case_when(Park=="ANTI" | Park=="CATO" | Park=="HAFE" ~ "XI",
+                                      Park!="ANTI" | Park!="CATO" | Park!="HAFE" ~ "IX")) %>%
+  mutate(cold_water=case_when(Park=="CATO" ~ "cold",
+                              Park!="CATO" ~ "warm")) %>%
+  mutate(threshold=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)" & karst=="karst" ~ "600",
+                             CharacteristicName=="Acid Neutralizing Capacity (ANC)" & karst=="non-karst" ~ "200",
+                             CharacteristicName=="Total Nitrogen, mixed forms" & nutrient_ecoregion=="IX" ~ "0.69",
+                             CharacteristicName=="Total Nitrogen, mixed forms" & nutrient_ecoregion=="XI" ~ "0.31",
+                             CharacteristicName=="Total Phosphorus, mixed forms" & nutrient_ecoregion=="IX" ~ "0.037",
+                             CharacteristicName=="Total Phosphorus, mixed forms" & nutrient_ecoregion=="XI" ~ "0.01",
+                             CharacteristicName=="Dissolved oxygen (DO)" & cold_water=="warm" ~ "5.0",
+                             CharacteristicName=="Dissolved oxygen (DO)" & cold_water=="cold" ~ "6.0",
+                             CharacteristicName=="Salinity" ~ "0.5",
+                             CharacteristicName=="Temperature, water" & cold_water=="warm" ~ "32",
+                             CharacteristicName=="Temperature, water" & cold_water=="cold" ~ "20",
+                             CharacteristicName=="pH"~"6–9")) %>%
+  mutate(pass_fail=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)" & karst=="karst" & ResultMeasureValue>600 ~ "P",
+                             CharacteristicName=="Acid Neutralizing Capacity (ANC)" & karst=="non-karst" & ResultMeasureValue>200 ~ "P",
+                             CharacteristicName=="Total Nitrogen, mixed forms" & nutrient_ecoregion=="IX" & ResultMeasureValue<0.69 ~ "P",
+                             CharacteristicName=="Total Nitrogen, mixed forms" & nutrient_ecoregion=="XI" & ResultMeasureValue<0.31 ~ "P",
+                             CharacteristicName=="Total Phosphorus, mixed forms" & nutrient_ecoregion=="IX" & ResultMeasureValue<0.037 ~ "P",
+                             CharacteristicName=="Total Phosphorus, mixed forms" & nutrient_ecoregion=="XI" & ResultMeasureValue<0.01 ~ "P",
+                             CharacteristicName=="pH" & (ResultMeasureValue<9 | ResultMeasureValue>6) ~ "P",
+                             CharacteristicName=="Dissolved oxygen (DO)" & cold_water=="warm" & ResultMeasureValue>5.0 ~ "P",
+                             CharacteristicName=="Dissolved oxygen (DO)" & cold_water=="cold" & ResultMeasureValue>6.0 ~ "P",
+                             CharacteristicName=="Salinity" & ResultMeasureValue<0.5 ~ "P",
+                             CharacteristicName=="Temperature, water" & cold_water=="warm" & ResultMeasureValue<32 ~ "P",
+                             CharacteristicName=="Temperature, water" & cold_water=="cold" & ResultMeasureValue<20 ~ "P",
+                             T ~ "F")) %>%
+  mutate(CharacteristicName=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"Acid neutralizing capacity",
+                                       CharacteristicName=="Dissolved oxygen (DO)"~"Dissolved oxygen",
+                                       CharacteristicName=="Temperature, water"~"Water temperature",
+                                       CharacteristicName=="Total Nitrogen, mixed forms"~"Total nitrogen",
+                                       CharacteristicName=="Total Phosphorus, mixed forms"~"Total phosphorus",
+                                       T~CharacteristicName)) %>%
+  mutate(ParkName=case_when(Park=="ANTI"~"Antietam National Battlefield",
+                             Park=="CATO"~"Catoctin Mountain Park",
+                             Park=="GWMP"~"George Washington Memorial Parkway",
+                             Park=="HAFE"~"Harpers Ferry National Historical Park",
+                             Park=="MANA"~"Manassas National Battlefield Park",
+                             Park=="MONO"~"Monocacy National Battlefield",
+                             Park=="NACE"~"National Capital Parks-East",
+                             Park=="PRWI"~"Prince William Forest Park",
+                             Park=="ROCR"~"Rock Creek Park",
+                             Park=="WOTR"~"Wolf Trap National Park for the Performing Arts")) %>%
+  mutate(image=paste(Park, Site, sep="_")) %>%
+  mutate(ResultMeasure.MeasureUnitCode=case_when(ResultMeasure.MeasureUnitCode=="deg C"~"\u00B0C",
+                                                 ResultMeasure.MeasureUnitCode!="deg C"~ResultMeasure.MeasureUnitCode)) %>%
+  select(ActivityStartDate, ParkName, MonitoringLocationName, cold_water, karst, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, year, threshold, pass_fail, image)
+
+##changing column names
+colnames(wq_data2) <- c("Date", "Park", "Site", "cold_water", "karst", "CharacteristicName",
+                        "ResultMeasureValue", "unit", "year", "threshold", "pass_fail", "image")
+
+```
+
+```{r park wq data, include=F}
+##filtering data frame by parameters
+park_data <- wq_data2 %>%
+  filter(Park==params$Park, Site==params$Site)
+
+# park_data <- wq_data2 %>%
+#   filter(Park=="Harpers Ferry National Historical Park", Site=="Flowing Springs Run")
+
+##2024 data
+park_data_24 <- park_data %>%
+  filter(year==2024) %>%
+  group_by(Site, CharacteristicName) %>%
+  ##calculating percent pass
+  mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
+  ##adding minimum and maximum value columns
+  mutate(min=min(ResultMeasureValue),
+         max=max(ResultMeasureValue)) %>%
+  ##rounding to two decimal places in min and max columns
+  mutate(min=round(min, digits=2),
+         max=round(max, digits=2)) %>%
+  group_by(Site, cold_water, karst, CharacteristicName, unit, threshold, min, max, percent_pass, image) %>%
+  summarize()
+
+##2019-23 data
+park_data_19_23 <- park_data %>%
+  filter(year!=2024) %>%
+  group_by(Site, CharacteristicName) %>%
+  mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
+  group_by(Site, CharacteristicName, percent_pass) %>%
+  summarize()
+
+```
+
+```{r table df, include=F}
+##merging 2024 and 2019-23 data frames 
+table <- merge(park_data_24, park_data_19_23, by="CharacteristicName")
+
+##creating data frame for table
+table <- table %>%
+  select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
+  ##rounding percent pass to two decimal places
+  mutate(percent_pass.x=round(percent_pass.x, digits=0)) %>%
+  mutate(percent_pass.y=round(percent_pass.y, digits=0)) %>%
+  ##adding colors column based on percent pass
+  mutate(colors1=if_else(percent_pass.x==100, "#ACE5EE", "#FE6F5E")) %>%
+  mutate(colors2=if_else(percent_pass.y==100, "#ACE5EE", "#FE6F5E"))
+
+##changing table column names
+# colnames(table) = c("Parameter", "% passing 2024", "% passing 2019-23",
+#                     "colors1", "colors2")
+
+table2 <- table %>%
+  # select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
+  pivot_longer(!(CharacteristicName | colors1 | colors2), names_to="years", values_to="percent_pass") %>%
+  mutate(years=case_when(years=="percent_pass.x"~"2024",
+                         years=="percent_pass.y"~"2019–23")) %>%
+  mutate(colors=case_when(colors1=="#ACE5EE"~"black",
+                          colors1=="#FE6F5E"~"#E32636")) %>%
+  mutate(x_pos=case_when(CharacteristicName=="Acid neutralizing capacity"~1,
+                         CharacteristicName=="Dissolved oxygen"~2,
+                         CharacteristicName=="pH"~3,
+                         CharacteristicName=="Salinity"~4,
+                         CharacteristicName=="Total nitrogen"~5,
+                         CharacteristicName=="Total phosphorus"~6,
+                         CharacteristicName=="Water temperature"~7)) %>%
+  select(CharacteristicName, x_pos, years, percent_pass, colors)
+
+colnames(table2) = c("Parameter", "x_pos", "years", "percent_pass", "colors")
+
+colors_list <- table2 %>%
+  mutate(Parameter=case_when(Parameter=="pH"~"PH",
+                             Parameter!="pH"~Parameter)) %>%
+  group_by(Parameter, colors) %>%
+  summarize() 
+
+colors_list <- print(colors_list$colors)
+
+```
+
+
+
+<!-- COLUMN 1 -->
+
+```{r table, echo=F, warning=F}
+# kbl(table[,1:3], longtable=F) %>%
+#   kable_paper() %>%
+#   row_spec(0, color="black") %>%
+#   column_spec(2, background=c(table$colors1)) %>%
+#   column_spec(3, background=c(table$colors2))
+
+```
+
+```{r figure, echo=F}
+bar_graph <- ggplot() +
+  geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
+           width=0.7, color="black", size=0.8, position="dodge", stat="identity") +
+  scale_fill_manual(name="Years", values=c("gray80", "#ACE5EE")) +
+   scale_x_discrete(labels=c("Acid neutralizing\ncapacity", "Dissolved oxygen", "pH",
+                             "Salinity", "Total nitrogen", "Total phosphorus", "Water temperature"))+
+  geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass, label=percent_pass, color=colors),
+            position="dodge", vjust=-0.5, size=4) +
+  xlab("Parameter") +
+  ylab("Percent Passing") +
+  coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 107), expand=F) +
+  theme_bw() +
+  theme(axis.text.x=element_text(color=colors_list, angle=40, vjust=0.5))
+
+bar_graph
+
+```
+
+
+```{r icons, include=F}
+##creating function to print icons
+# icon <- function(df) {
+#   
+#   if (df$pass_fail=="F") {
+#     git_emoji("triangular_flag")
+#     } else{print(" ")}
+#   
+# }
+
+```
+
+Acid Neutralizing Capacity (ANC)    
+**Acceptable values:** Above `r park_data_24$threshold[park_data_24$CharacteristicName=="Acid neutralizing capacity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid neutralizing capacity"]`   
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Acid neutralizing capacity"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Acid neutralizing capacity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid neutralizing capacity"]`  
+ANC is a measure of water’s ability to buffer acidic inputs. ANC measurements have never fallen below the acceptable threshold since monitoring began in 2005.  
+   
+Dissolved Oxygen (DO)  
+**Acceptable values:** Above `r park_data_24$threshold[park_data_24$CharacteristicName=="Dissolved oxygen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Dissolved oxygen"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Dissolved oxygen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen"]`   
+Aquatic organisms rely on DO to survive. Cooler water holds more DO, so measurements vary by season. DO has not fallen below the acceptable threshold since 2006.  
+  
+pH  
+**Acceptable range:** `r park_data_24$threshold[park_data_24$CharacteristicName=="pH"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$max[park_data_24$CharacteristicName=="pH"]`  
+pH is a measure of how acidic or basic a liquid is.  pH measurements have fallen within the acceptable range since monitoring began in 2005.  
+  
+Salinity  
+**Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Salinity"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
+Road salt is the main cause of high salinity in NCR streams.  Salinity has not surpassed the acceptable threshold at Flowing Springs Run since 2017.  
+  
+Total Nitrogen  
+**Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Total nitrogen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total nitrogen"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total nitrogen"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total nitrogen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total nitrogen"]`  
+Nitrogen is commonly used in agricultural fertilizers. Under high concentrations, it can adversely affect aquatic life. All total nitrogen measurements since 2016 have exceeded the acceptable threshold.  
+  
+![](Site images\`r unique(park_data_24$image)`.png){width=300px}  
+  
+Total Phosphorus  
+**Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Total phosphorus"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total phosphorus"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total phosphorus"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total phosphorus"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total phosphorus"]`  
+Phosphorus is often a limiting nutrient in freshwater streams, meaning a small increase in phosphorus concentration can lead to algal blooms. All observations in 2024 exceeded the threshold.  
+  
+Water Temperature  
+**Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Water temperature"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Water temperature"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Water temperature"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Water temperature"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Water temperature"]`   
+Water temperature measurements have remained below the acceptable threshold since monitoring began in 2005.  
+  
+Water Quality Monitoring in the NCR  
+Data on additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids, are available in the [NCRN water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
