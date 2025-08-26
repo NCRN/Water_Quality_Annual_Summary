@@ -3,8 +3,6 @@ title: |
   | `r params$Year` Water Quality Annual Summary: 
   | `r params$Park`, `r params$Site`
 output: pdf_document
-classoption:
-  - twocolumn
 params:
   Park: "Prince William Forest Park"
   Site: "Orenda Run"
@@ -128,7 +126,7 @@ park_data <- wq_data2 %>%
   filter(Park==params$Park, Site==params$Site)
 
 # park_data <- wq_data2 %>%
-#   filter(Park=="Harpers Ferry National Historical Park", Site=="Flowing Springs Run")
+#   filter(Park=="Prince William Forest Park", Site=="Orenda Run")
 
 ##2024 data
 park_data_24 <- park_data %>%
@@ -142,8 +140,39 @@ park_data_24 <- park_data %>%
   ##rounding to two decimal places in min and max columns
   mutate(min=round(min, digits=2),
          max=round(max, digits=2)) %>%
-  group_by(Site, cold_water, karst, CharacteristicName, unit, threshold, min, max, percent_pass, image) %>%
+  group_by(Site, cold_water, karst, CharacteristicName, unit, threshold, min, max, pass_fail, percent_pass, image) %>%
   summarize()
+
+##function to remove duplicate rows for parameters with both passing and failing values 
+remove_duplicates <- function(df) {
+  
+  if (nrow(df[df$CharacteristicName=="Acid neutralizing capacity",])==2) {
+  df <- df[!(df$CharacteristicName=="Acid neutralizing capacity" & df$pass_fail=="P"),]
+  } else{df <- df}
+  
+  if (nrow(df[df$CharacteristicName=="Dissolved oxygen",])==2) {
+  df <- df[!(df$CharacteristicName=="Dissolved oxygen" & df$pass_fail=="P"),]
+  } else{df <- df}
+
+  if (nrow(df[df$CharacteristicName=="Salinity",])==2) {
+  df <- df[!(df$CharacteristicName=="Salinity" & df$pass_fail=="P"),]
+  } else{df <- df}
+
+  if (nrow(df[df$CharacteristicName=="Total nitrogen",])==2) {
+  df <- df[!(df$CharacteristicName=="Total nitrogen" & df$pass_fail=="P"),]
+  } else{df <- df}
+
+  if (nrow(df[df$CharacteristicName=="Total phosphorus",])==2) {
+  df <- df[!(df$CharacteristicName=="Total phosphorus" & df$pass_fail=="P"),]
+  } else{df <- df}
+
+  if (nrow(df[df$CharacteristicName=="Water temperature",])==2) {
+  df <- df[!(df$CharacteristicName=="Water temperature" & df$pass_fail=="P"),]
+  } else{df <- df}
+  
+}
+
+park_data_24 <- remove_duplicates(park_data_24)
 
 ##2019-23 data
 park_data_19_23 <- park_data %>%
@@ -201,10 +230,6 @@ colors_list <- print(colors_list$colors)
 
 ```
 
-
-
-<!-- COLUMN 1 -->
-
 ```{r table, echo=F, warning=F}
 # kbl(table[,1:3], longtable=F) %>%
 #   kable_paper() %>%
@@ -214,77 +239,199 @@ colors_list <- print(colors_list$colors)
 
 ```
 
-```{r figure, echo=F, warning=F}
+<!--creating figure-->
+```{r figure, echo=F, warning=F, fig.width = 5, fig.height = 3}
+##creating bar graph
 bar_graph <- ggplot() +
   geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
            width=0.7, color="black", size=0.8, position="dodge", stat="identity") +
   scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
-  scale_x_discrete(labels=c("Acid neutralizing\ncapacity", "Dissolved oxygen", "pH",
-                             "Salinity", "Total nitrogen", "Total phosphorus", "Water temperature")) +
+  scale_x_discrete(labels=c("Acid\nneutralizing\ncapacity", "Dissolved\noxygen", "pH",
+                             "Salinity", "Total\nnitrogen", "Total\nphosphorus", "Water\ntemperature")) +
   xlab("Parameter") +
   ylab("% Passing") +
   coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 107), expand=F) +
-  geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, label=percent_pass, color=colors),
-            position=position_dodge2(width=0.7, preserve="total"), size=3) +
-  scale_color_manual(values=c("#FC8D62", "black"), guide="none") +
+  geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
+            position=position_dodge2(width=0.7, preserve="total"), size=2.5) +
+  scale_color_manual(values=c("#E32636", "black"), guide="none") +
   theme_bw() +
-  theme(axis.text.x=element_text(color=colors_list, angle=40, vjust=0.5, hjust=0.5))
+  theme(axis.text.x=element_text(color=colors_list, size=8, angle=35, vjust=0.8, hjust=0.5),
+        axis.title.x=element_text(vjust=3),
+        legend.position=c(0.15, -0.25),
+        legend.direction="horizontal",
+        plot.margin = unit(c(1,1,1,1), "cm"))
 
-#bar_graph
-
-ggplotly(bar_graph)
+bar_graph
 
 ```
 
+```{r, include=F}
+# bar_graph <- ggplot() +
+#   geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
+#            width=0.7, color="black", position="dodge", stat="identity") +
+#   scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
+#   scale_x_discrete(labels=c("Acid neutralizing\ncapacity", "Dissolved oxygen", "pH",
+#                              "Salinity", "Total nitrogen", "Total phosphorus", "Water temperature")) +
+#   xlab("Parameter") +
+#   ylab("% Passing") +
+#   coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 107), expand=F) +
+#   geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
+#             position=position_dodge2(width=0.7, preserve="total"), size=3) +
+#   scale_color_manual(values=c("#E32636", "black"), guide="none") +
+#   theme_bw() +
+#   theme(axis.text.x=element_text(color=colors_list, angle=40, vjust=0.5, hjust=0.5))
+# 
+# #bar_graph
+# 
+# ggplotly(bar_graph)
 
+```
+
+```{r plotly graph, echo=F, warning=F}
+##editing table df
+# table3 <- table %>%
+#   select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
+#   mutate(colors=case_when(percent_pass.x==100~"black",
+#                           percent_pass.x!=100~"#E32636")) %>%
+#   mutate(CharacteristicName=case_when(CharacteristicName=="Acid neutralizing capacity"~"Acid\nneutralizing\ncapacity",
+#                                       CharacteristicName=="Dissolved oxygen"~"Dissolved\noxygen",
+#                                       CharacteristicName=="Total nitrogen"~"Total\nnitrogen",
+#                                       CharacteristicName=="Total phosphorus"~"Total\nphosphorus",
+#                                       CharacteristicName=="Water temperature"~"Water\ntemperature",
+#                                       T~CharacteristicName))
+# 
+# colnames(table3) <- c("CharacteristicName", "current", "prev", "colors")
+# 
+# ##making bar graph in plotly
+# bar_graph <- plot_ly(table3, x=~CharacteristicName, y=~prev,
+#                      type="bar", name="2019–23",
+#                      text=~prev, textposition="auto",
+#                      marker=list(color="#D9D9D9",
+#                                  line=list(color="black",
+#                                            width = 1.5)))
+# bar_graph <- bar_graph %>%
+#   add_trace(y=~current, name="2024",
+#             text=~current, textposition="auto",
+#             marker=list(color="#8DA0CB",
+#                         line=list(color="black",
+#                                   width = 1.5))) %>%
+#   layout(yaxis=list(title="% Passing"),
+#          xaxis=list(title="Parameter", standoff=50,  showticklabels=F),
+#          barmode="group", margin=list(t=50, b=75, l=75, r=50)) %>%
+#   add_annotations(x=table3$CharacteristicName[1], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[1],
+#                   font=list(color=table3$colors[1], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[2], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[2],
+#                   font=list(color=table3$colors[2], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[3], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[3],
+#                   font=list(color=table3$colors[3], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[4], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[4],
+#                   font=list(color=table3$colors[4], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[5], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[5],
+#                   font=list(color=table3$colors[5], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[6], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[6],
+#                   font=list(color=table3$colors[6], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[7], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[7],
+#                   font=list(color=table3$colors[7], size=10),
+#                   textangle=-30,
+#                   showarrow=F)
+# 
+# bar_graph
+
+
+  # add_annotations(x=-0.1, y=c(0, 20, 40, 60, 80, 100),
+  #                 xref="paper", yref="y",
+  #                 text=c("0", "20", "40", "60", "80", "100"),
+  #                 font=list(color="black"),
+  #                 showarrow=F)
+
+
+# kaleido(bar_graph, "bar_graph.pdf")
+
+```
+
+![](Site images\`r unique(park_data_24$image)`.png){width=100px, style="float:right"}
+
+<!--function for adding icons to parameters with exceedances-->
 ```{r icons, include=F}
 ##creating function to print icons
-# icon <- function(df) {
-#   
-#   if (df$pass_fail=="F") {
-#     git_emoji("triangular_flag")
-#     } else{print(" ")}
-#   
-# }
+icon <- function(df) {
+
+  if (df$pass_fail=="F") {
+    #git_emoji("triangular_flag")
+    "!"
+    } else{print(" ")}
+
+}
 
 ```
 
-Acid Neutralizing Capacity (ANC)    
+<!--start two column format-->
+```{r, echo=F, results="asis"}
+
+cat("\\twocolumn")
+
+```
+
+Acid Neutralizing Capacity (ANC) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Acid neutralizing capacity",])`}}        
 **Acceptable values:** Above `r park_data_24$threshold[park_data_24$CharacteristicName=="Acid neutralizing capacity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid neutralizing capacity"]`   
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Acid neutralizing capacity"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Acid neutralizing capacity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid neutralizing capacity"]`  
-ANC is a measure of water’s ability to buffer acidic inputs. ANC measurements have never fallen below the acceptable threshold since monitoring began in 2005.  
+ANC is a measure of water’s ability to buffer acidic inputs. ANC measurements have never fallen below the acceptable threshold since monitoring began in 2005.   
    
-Dissolved Oxygen (DO)  
+Dissolved Oxygen (DO) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Dissolved oxygen",])`}}    
 **Acceptable values:** Above `r park_data_24$threshold[park_data_24$CharacteristicName=="Dissolved oxygen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen"]`  
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Dissolved oxygen"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Dissolved oxygen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen"]`   
 Aquatic organisms rely on DO to survive. Cooler water holds more DO, so measurements vary by season. DO has not fallen below the acceptable threshold since 2006.  
   
-pH  
+pH \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="pH",])`}}    
 **Acceptable range:** `r park_data_24$threshold[park_data_24$CharacteristicName=="pH"]`  
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$max[park_data_24$CharacteristicName=="pH"]`  
 pH is a measure of how acidic or basic a liquid is.  pH measurements have fallen within the acceptable range since monitoring began in 2005.  
   
-Salinity  
+Salinity \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Salinity",])`}}    
 **Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Salinity"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
 Road salt is the main cause of high salinity in NCR streams.  Salinity has not surpassed the acceptable threshold at Flowing Springs Run since 2017.  
   
-Total Nitrogen  
+Total Nitrogen \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total nitrogen",])`}}   
 **Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Total nitrogen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total nitrogen"]`  
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total nitrogen"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total nitrogen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total nitrogen"]`  
 Nitrogen is commonly used in agricultural fertilizers. Under high concentrations, it can adversely affect aquatic life. All total nitrogen measurements since 2016 have exceeded the acceptable threshold.  
   
-![](Site images\`r unique(park_data_24$image)`.png){width=300px}  
-  
-Total Phosphorus  
+Total Phosphorus \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total phosphorus",])`}}   
 **Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Total phosphorus"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total phosphorus"]`  
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total phosphorus"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total phosphorus"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total phosphorus"]`  
 Phosphorus is often a limiting nutrient in freshwater streams, meaning a small increase in phosphorus concentration can lead to algal blooms. All observations in 2024 exceeded the threshold.  
   
-Water Temperature  
+Water Temperature \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Water temperature",])`}}    
 **Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Water temperature"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Water temperature"]`  
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Water temperature"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Water temperature"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Water temperature"]`   
 Water temperature measurements have remained below the acceptable threshold since monitoring began in 2005.  
   
-Water Quality Monitoring in the NCR  
+**Water Quality Monitoring in the NCR**  
 Data on additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids, are available in the [NCRN water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
