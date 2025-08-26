@@ -184,6 +184,7 @@ park_data_19_23 <- park_data %>%
 
 ```
 
+<!--setting up data frame for table and figure-->
 ```{r table df, include=F}
 ##merging 2024 and 2019-23 data frames 
 table <- merge(park_data_24, park_data_19_23, by="CharacteristicName")
