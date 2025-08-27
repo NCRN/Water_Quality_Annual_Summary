@@ -420,7 +420,7 @@ file_path <- paste("Site images/", fig_name, ".png", sep="")
 
 <!--site map-->
 ```{r, echo=F, fig.align="right", out.width="20%"}
-# map_path <- paste("Maps/", fig_name, "_map.png", sep="")
+ map_path <- paste("Maps/", fig_name, "_map.png", sep="")
 # 
 # include_graphics(map_path)
 
