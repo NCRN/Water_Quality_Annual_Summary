@@ -3,6 +3,7 @@ title: |
   | `r params$Year` Water Quality Annual Summary: 
   | `r params$Park`, `r params$Site`
 output: pdf_document
+always_allow_html: true
 params:
   Park: "Prince William Forest Park"
   Site: "Orenda Run"
