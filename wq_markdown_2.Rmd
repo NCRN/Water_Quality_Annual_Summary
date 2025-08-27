@@ -37,8 +37,6 @@ library(Rmoji)
 #install.packages("plotly")
 library(plotly)
 library(ggplot2)
-#install.packages("patchwork")
-library(patchwork)
 
 ```
 
@@ -49,6 +47,7 @@ metadata <- metadata %>%
 
 park <- metadata %>%
   filter(Park==params$Park & Site==params$Site) 
+  # filter(Park=="NACE", Site=="OXRU") 
 mypark <- unique(park$LongName)
 mysite <- unique(park$SiteName)
 
@@ -124,7 +123,7 @@ park_data <- wq_data2 %>%
   filter(Park==params$Park, Site==params$Site)
 
 # park_data <- wq_data2 %>%
-#   filter(Park=="PRWI", Site=="ORRU")
+#   filter(Park=="NACE", Site=="OXRU")
 
 ##2024 data
 park_data_24 <- park_data %>%
@@ -148,44 +147,6 @@ for(i in unique(park_data_24$CharacteristicName)) {
                                      park_data_24$pass_fail=="P"),]
   } else{park_data_24 <- park_data_24}
 }
-
-# remove_duplicates <- function(df) {
-#   for(i in unique(df$CharacteristicName)) {
-#     if (nrow(df[df$CharacteristicName==i,])==2) {
-#       df <- df[!(df$CharacteristicName==i & df$pass_fail=="P"),]
-#     } else{df <- df}
-#   }
-# }
-
-# remove_duplicates <- function(df) {
-#   
-#   if (nrow(df[df$CharacteristicName=="Acid neutralizing capacity",])==2) {
-#   df <- df[!(df$CharacteristicName=="Acid neutralizing capacity" & df$pass_fail=="P"),]
-#   } else{df <- df}
-#   
-#   if (nrow(df[df$CharacteristicName=="Dissolved oxygen",])==2) {
-#   df <- df[!(df$CharacteristicName=="Dissolved oxygen" & df$pass_fail=="P"),]
-#   } else{df <- df}
-# 
-#   if (nrow(df[df$CharacteristicName=="Salinity",])==2) {
-#   df <- df[!(df$CharacteristicName=="Salinity" & df$pass_fail=="P"),]
-#   } else{df <- df}
-# 
-#   if (nrow(df[df$CharacteristicName=="Total nitrogen",])==2) {
-#   df <- df[!(df$CharacteristicName=="Total nitrogen" & df$pass_fail=="P"),]
-#   } else{df <- df}
-# 
-#   if (nrow(df[df$CharacteristicName=="Total phosphorus",])==2) {
-#   df <- df[!(df$CharacteristicName=="Total phosphorus" & df$pass_fail=="P"),]
-#   } else{df <- df}
-# 
-#   if (nrow(df[df$CharacteristicName=="Water temperature",])==2) {
-#   df <- df[!(df$CharacteristicName=="Water temperature" & df$pass_fail=="P"),]
-#   } else{df <- df}
-#   
-# }
-# 
-# park_data_24 <- remove_duplicates(park_data_24)
 
 ##2019-23 data
 park_data_19_23 <- park_data %>%
@@ -416,28 +377,37 @@ file_path <- paste("Site images/", fig_name, ".png", sep="")
 
 #include_graphics(file_path)
 
-```
-
-<!--site map-->
-```{r, echo=F, fig.align="right", out.width="20%"}
- map_path <- paste("Maps/", fig_name, "_map.png", sep="")
-# 
-# include_graphics(map_path)
-
-```
-
-<!--pasting in figures-->
-```{r, echo=F, fig.show="hold", out.width="50%"}
-
-# bar_graph
-# include_graphics(file_path)
-
 site_image <- include_graphics(file_path)
 
 ```
 
-```{r}
-bar_graph + plot_spacer() + site_image + plot_spacer() + 
+<!--site map-->
+```{r, echo=F, fig.align="right", out.width="20%"}
+ map_path <- paste("maps/", fig_name, "_map2.png", sep="")
+
+# include_graphics(map_path)
+
+site_map <- include_graphics(map_path)
+
+```
+
+<!--pasting in figures-->
+```{r, echo=F, fig.show="hold", out.width="50%", fig.ncol=2}
+
+# bar_graph
+# site_image
+# site_map
+
+```
+
+```{r, echo=F}
+
+site_photo <- ggdraw() + draw_image(file_path)
+site_map <- ggdraw() + draw_image(map_path)
+
+plot_grid(bar_graph, site_photo, site_map, ncol=2,
+          rel_heights=c(1,1), byrow=F,
+          layout_matrix=matrix(c(1, 2, 1, 3), nrow=2, byrow=T))
 
 ```
 
