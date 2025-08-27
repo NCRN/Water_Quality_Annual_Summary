@@ -1,17 +1,24 @@
 ---
 title: |
-  | `r params$Year` Water Quality Annual Summary: 
-  | `r params$Park`, `r params$Site`
-output: pdf_document
+  | **`r params$Year` Water Quality Annual Summary** 
+  | `r params$Park`: `r params$Site`
+output:
+  pdf_document:
+    latex_engine: xelatex
+mainfont: Arial
+header-includes:
+- \pagenumbering{gobble}
+geometry: margin=1cm
 always_allow_html: true
 params:
-  Park: "Prince William Forest Park"
-  Site: "Orenda Run"
+  Park: "NACE"
+  Site: "OXRU"
   Year: "2024"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
 ```{r load packages, include=F}
@@ -30,10 +37,27 @@ library(Rmoji)
 #install.packages("plotly")
 library(plotly)
 library(ggplot2)
+#install.packages("patchwork")
+library(patchwork)
 
 ```
 
 ```{r wq data, include=F}
+metadata <- read.csv("wqp_ncrnwater_metadata.csv")
+metadata <- metadata %>%
+  separate(SiteCode, c("Network", "Park", "Site"))
+
+park <- metadata %>%
+  filter(Park==params$Park & Site==params$Site) 
+mypark <- unique(park$LongName)
+mysite <- unique(park$SiteName)
+
+thresholds <- metadata %>%
+  select(SiteCodeWQX, DataName, Category, LowerPoint, UpperPoint) %>%
+  select(SiteCodeWQX, DataName, LowerPoint, UpperPoint)
+
+colnames(thresholds) <- c("MonitoringLocationIdentifier", "CharacteristicName", "LowerPoint", "UpperPoint")
+
 ##loading in data
 current_wd <- getwd()
 setwd(current_wd)
@@ -52,9 +76,15 @@ wq_data1$year <- year(wq_data1$ActivityStartDate)
 ##converting ResultMeasureValue to numeric object
 wq_data1$ResultMeasureValue <- as.numeric(wq_data1$ResultMeasureValue)
 
+wq_data1 <- wq_data1 %>%
+  na.omit()
+
+wq_data_merged <- merge(wq_data1, thresholds,
+                        by=c("MonitoringLocationIdentifier", 
+                             "CharacteristicName"), all=T)
+
 ##data wrangling
-wq_data2 <- wq_data1 %>%
-  na.omit() %>%
+wq_data2 <- wq_data_merged %>%
   filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
                                    "Total Nitrogen, mixed forms",
                                    "Total Phosphorus, mixed forms",
@@ -62,62 +92,29 @@ wq_data2 <- wq_data1 %>%
                                    "Salinity", "Temperature, water")) %>%
   filter(year>2018) %>%
   separate(MonitoringLocationIdentifier, c("Network", "Park", "Site")) %>%
-  select(ActivityStartDate, Park, Site, MonitoringLocationName, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, year) %>%
+  select(ActivityStartDate, Park, Site, MonitoringLocationName, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, year, LowerPoint, UpperPoint) %>%
   mutate(karst=case_when(Park=="ANTI" | Park=="HAFE" | Park=="MONO" ~ "karst",
                          Park!="ANTI" | Park!="HAFE" | Park!="MONO" ~ "non-karst")) %>%
   mutate(nutrient_ecoregion=case_when(Park=="ANTI" | Park=="CATO" | Park=="HAFE" ~ "XI",
                                       Park!="ANTI" | Park!="CATO" | Park!="HAFE" ~ "IX")) %>%
   mutate(cold_water=case_when(Park=="CATO" ~ "cold",
                               Park!="CATO" ~ "warm")) %>%
-  mutate(threshold=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)" & karst=="karst" ~ "600",
-                             CharacteristicName=="Acid Neutralizing Capacity (ANC)" & karst=="non-karst" ~ "200",
-                             CharacteristicName=="Total Nitrogen, mixed forms" & nutrient_ecoregion=="IX" ~ "0.69",
-                             CharacteristicName=="Total Nitrogen, mixed forms" & nutrient_ecoregion=="XI" ~ "0.31",
-                             CharacteristicName=="Total Phosphorus, mixed forms" & nutrient_ecoregion=="IX" ~ "0.037",
-                             CharacteristicName=="Total Phosphorus, mixed forms" & nutrient_ecoregion=="XI" ~ "0.01",
-                             CharacteristicName=="Dissolved oxygen (DO)" & cold_water=="warm" ~ "5.0",
-                             CharacteristicName=="Dissolved oxygen (DO)" & cold_water=="cold" ~ "6.0",
-                             CharacteristicName=="Salinity" ~ "0.5",
-                             CharacteristicName=="Temperature, water" & cold_water=="warm" ~ "32",
-                             CharacteristicName=="Temperature, water" & cold_water=="cold" ~ "20",
-                             CharacteristicName=="pH"~"6–9")) %>%
-  mutate(pass_fail=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)" & karst=="karst" & ResultMeasureValue>600 ~ "P",
-                             CharacteristicName=="Acid Neutralizing Capacity (ANC)" & karst=="non-karst" & ResultMeasureValue>200 ~ "P",
-                             CharacteristicName=="Total Nitrogen, mixed forms" & nutrient_ecoregion=="IX" & ResultMeasureValue<0.69 ~ "P",
-                             CharacteristicName=="Total Nitrogen, mixed forms" & nutrient_ecoregion=="XI" & ResultMeasureValue<0.31 ~ "P",
-                             CharacteristicName=="Total Phosphorus, mixed forms" & nutrient_ecoregion=="IX" & ResultMeasureValue<0.037 ~ "P",
-                             CharacteristicName=="Total Phosphorus, mixed forms" & nutrient_ecoregion=="XI" & ResultMeasureValue<0.01 ~ "P",
-                             CharacteristicName=="pH" & (ResultMeasureValue<9 | ResultMeasureValue>6) ~ "P",
-                             CharacteristicName=="Dissolved oxygen (DO)" & cold_water=="warm" & ResultMeasureValue>5.0 ~ "P",
-                             CharacteristicName=="Dissolved oxygen (DO)" & cold_water=="cold" & ResultMeasureValue>6.0 ~ "P",
-                             CharacteristicName=="Salinity" & ResultMeasureValue<0.5 ~ "P",
-                             CharacteristicName=="Temperature, water" & cold_water=="warm" & ResultMeasureValue<32 ~ "P",
-                             CharacteristicName=="Temperature, water" & cold_water=="cold" & ResultMeasureValue<20 ~ "P",
-                             T ~ "F")) %>%
-  mutate(CharacteristicName=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"Acid neutralizing capacity",
-                                       CharacteristicName=="Dissolved oxygen (DO)"~"Dissolved oxygen",
-                                       CharacteristicName=="Temperature, water"~"Water temperature",
-                                       CharacteristicName=="Total Nitrogen, mixed forms"~"Total nitrogen",
-                                       CharacteristicName=="Total Phosphorus, mixed forms"~"Total phosphorus",
-                                       T~CharacteristicName)) %>%
-  mutate(ParkName=case_when(Park=="ANTI"~"Antietam National Battlefield",
-                             Park=="CATO"~"Catoctin Mountain Park",
-                             Park=="GWMP"~"George Washington Memorial Parkway",
-                             Park=="HAFE"~"Harpers Ferry National Historical Park",
-                             Park=="MANA"~"Manassas National Battlefield Park",
-                             Park=="MONO"~"Monocacy National Battlefield",
-                             Park=="NACE"~"National Capital Parks-East",
-                             Park=="PRWI"~"Prince William Forest Park",
-                             Park=="ROCR"~"Rock Creek Park",
-                             Park=="WOTR"~"Wolf Trap National Park for the Performing Arts")) %>%
-  mutate(image=paste(Park, Site, sep="_")) %>%
+  mutate(pass_fail=case_when(ResultMeasureValue>UpperPoint~"F",
+                             ResultMeasureValue<LowerPoint~"F",
+                             TRUE~"P")) %>%
   mutate(ResultMeasure.MeasureUnitCode=case_when(ResultMeasure.MeasureUnitCode=="deg C"~"\u00B0C",
                                                  ResultMeasure.MeasureUnitCode!="deg C"~ResultMeasure.MeasureUnitCode)) %>%
-  select(ActivityStartDate, ParkName, MonitoringLocationName, cold_water, karst, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, year, threshold, pass_fail, image)
+  mutate(UpperPoint=as.character(UpperPoint)) %>%
+  mutate(UpperPoint=case_when(CharacteristicName=="pH"~"9",
+                              CharacteristicName!="pH"~UpperPoint)) %>%
+  select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, year, LowerPoint, UpperPoint, pass_fail)
 
 ##changing column names
-colnames(wq_data2) <- c("Date", "Park", "Site", "cold_water", "karst", "CharacteristicName",
-                        "ResultMeasureValue", "unit", "year", "threshold", "pass_fail", "image")
+colnames(wq_data2) <- c("Date", "Park", "Site", "SiteName","karst", 
+                        "nutrient_ecoregion", "cold_water",
+                        "CharacteristicName", "ResultMeasureValue", 
+                        "unit", "year", "LowerPoint","UpperPoint",
+                        "pass_fail")
 
 ```
 
@@ -127,7 +124,7 @@ park_data <- wq_data2 %>%
   filter(Park==params$Park, Site==params$Site)
 
 # park_data <- wq_data2 %>%
-#   filter(Park=="Prince William Forest Park", Site=="Orenda Run")
+#   filter(Park=="PRWI", Site=="ORRU")
 
 ##2024 data
 park_data_24 <- park_data %>%
@@ -141,39 +138,54 @@ park_data_24 <- park_data %>%
   ##rounding to two decimal places in min and max columns
   mutate(min=round(min, digits=2),
          max=round(max, digits=2)) %>%
-  group_by(Site, cold_water, karst, CharacteristicName, unit, threshold, min, max, pass_fail, percent_pass, image) %>%
+  group_by(Site, cold_water, karst, nutrient_ecoregion, CharacteristicName, unit, LowerPoint, UpperPoint, min, max, pass_fail, percent_pass) %>%
   summarize()
 
 ##function to remove duplicate rows for parameters with both passing and failing values 
-remove_duplicates <- function(df) {
-  
-  if (nrow(df[df$CharacteristicName=="Acid neutralizing capacity",])==2) {
-  df <- df[!(df$CharacteristicName=="Acid neutralizing capacity" & df$pass_fail=="P"),]
-  } else{df <- df}
-  
-  if (nrow(df[df$CharacteristicName=="Dissolved oxygen",])==2) {
-  df <- df[!(df$CharacteristicName=="Dissolved oxygen" & df$pass_fail=="P"),]
-  } else{df <- df}
-
-  if (nrow(df[df$CharacteristicName=="Salinity",])==2) {
-  df <- df[!(df$CharacteristicName=="Salinity" & df$pass_fail=="P"),]
-  } else{df <- df}
-
-  if (nrow(df[df$CharacteristicName=="Total nitrogen",])==2) {
-  df <- df[!(df$CharacteristicName=="Total nitrogen" & df$pass_fail=="P"),]
-  } else{df <- df}
-
-  if (nrow(df[df$CharacteristicName=="Total phosphorus",])==2) {
-  df <- df[!(df$CharacteristicName=="Total phosphorus" & df$pass_fail=="P"),]
-  } else{df <- df}
-
-  if (nrow(df[df$CharacteristicName=="Water temperature",])==2) {
-  df <- df[!(df$CharacteristicName=="Water temperature" & df$pass_fail=="P"),]
-  } else{df <- df}
-  
+for(i in unique(park_data_24$CharacteristicName)) {
+  if(nrow(park_data_24[park_data_24$CharacteristicName==i,])==2) {
+    park_data_24 <- park_data_24[!(park_data_24$CharacteristicName==i &
+                                     park_data_24$pass_fail=="P"),]
+  } else{park_data_24 <- park_data_24}
 }
 
-park_data_24 <- remove_duplicates(park_data_24)
+# remove_duplicates <- function(df) {
+#   for(i in unique(df$CharacteristicName)) {
+#     if (nrow(df[df$CharacteristicName==i,])==2) {
+#       df <- df[!(df$CharacteristicName==i & df$pass_fail=="P"),]
+#     } else{df <- df}
+#   }
+# }
+
+# remove_duplicates <- function(df) {
+#   
+#   if (nrow(df[df$CharacteristicName=="Acid neutralizing capacity",])==2) {
+#   df <- df[!(df$CharacteristicName=="Acid neutralizing capacity" & df$pass_fail=="P"),]
+#   } else{df <- df}
+#   
+#   if (nrow(df[df$CharacteristicName=="Dissolved oxygen",])==2) {
+#   df <- df[!(df$CharacteristicName=="Dissolved oxygen" & df$pass_fail=="P"),]
+#   } else{df <- df}
+# 
+#   if (nrow(df[df$CharacteristicName=="Salinity",])==2) {
+#   df <- df[!(df$CharacteristicName=="Salinity" & df$pass_fail=="P"),]
+#   } else{df <- df}
+# 
+#   if (nrow(df[df$CharacteristicName=="Total nitrogen",])==2) {
+#   df <- df[!(df$CharacteristicName=="Total nitrogen" & df$pass_fail=="P"),]
+#   } else{df <- df}
+# 
+#   if (nrow(df[df$CharacteristicName=="Total phosphorus",])==2) {
+#   df <- df[!(df$CharacteristicName=="Total phosphorus" & df$pass_fail=="P"),]
+#   } else{df <- df}
+# 
+#   if (nrow(df[df$CharacteristicName=="Water temperature",])==2) {
+#   df <- df[!(df$CharacteristicName=="Water temperature" & df$pass_fail=="P"),]
+#   } else{df <- df}
+#   
+# }
+# 
+# park_data_24 <- remove_duplicates(park_data_24)
 
 ##2019-23 data
 park_data_19_23 <- park_data %>%
@@ -210,22 +222,32 @@ table2 <- table %>%
                          years=="percent_pass.y"~"2019–23")) %>%
   mutate(colors=case_when(percent_pass==100~"black",
                           percent_pass!=100~"#E32636")) %>%
-  mutate(x_pos=case_when(CharacteristicName=="Acid neutralizing capacity"~1,
-                         CharacteristicName=="Dissolved oxygen"~2,
+  mutate(x_pos=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~1,
+                         CharacteristicName=="Dissolved oxygen (DO)"~2,
                          CharacteristicName=="pH"~3,
                          CharacteristicName=="Salinity"~4,
-                         CharacteristicName=="Total nitrogen"~5,
-                         CharacteristicName=="Total phosphorus"~6,
-                         CharacteristicName=="Water temperature"~7)) %>%
+                         CharacteristicName=="Total Nitrogen, mixed forms"~5,
+                         CharacteristicName=="Total Phosphorus, mixed forms"~6,
+                         CharacteristicName=="Temperature, water"~7)) %>%
   select(CharacteristicName, x_pos, years, percent_pass, colors)
 
 colnames(table2) = c("Parameter", "x_pos", "years", "percent_pass", "colors")
 
 colors_list <- table2 %>%
-  mutate(Parameter=case_when(Parameter=="pH"~"PH",
-                             Parameter!="pH"~Parameter)) %>%
+  # mutate(Parameter=case_when(Parameter=="pH"~"PH",
+  #                            Parameter=="Temperature, water"~"Water temperature",
+  #                            Parameter=="Acid"
+  #                            Parameter!="pH"~Parameter)) %>%
   group_by(Parameter, colors, years) %>%
   summarize() 
+
+colors_list <- colors_list[!colors_list$years=="2019–23",]
+
+colors_list$Parameter=c("Acid neutralizing capacity", "Dissolved oxygen",
+                        "Salinity", "Water temperature", "Total nitrogen",
+                        "Total phosphorus", "PH")
+
+colors_list <- colors_list[order(colors_list$Parameter),]
 
 ##function  
 # color_list <- function(df) {
@@ -251,30 +273,28 @@ colors_list <- print(colors_list$colors)
 ```
 
 <!--creating figure-->
-```{r figure, echo=F, warning=F, fig.width = 5, fig.height = 4}
+```{r figure, echo=F, warning=F, fig.width = 4, fig.height = 3, fig.align="left"}
 ##creating bar graph
-# bar_graph <- ggplot() +
-#   geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
-#            width=0.7, color="black", size=0.8, position="dodge", stat="identity") +
-#   scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
-#   scale_x_discrete(labels=c("Acid\nneutralizing\ncapacity", "Dissolved\noxygen", "pH",
-#                              "Salinity", "Total\nnitrogen", "Total\nphosphorus", "Water\ntemperature")) +
-#   xlab("Parameter") +
-#   ylab("% Passing") +
-#   coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 110), expand=F) +
-#   # geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
-#   #           position=position_dodge2(width=0.7, preserve="total"), size=2.5) +
-#   geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
-#             position=position_dodge2(width=0.7, preserve="total"), size=2.5) +
-#   scale_color_manual(values=c("#E32636", "black"), guide="none") +
-#   theme_bw() +
-#   theme(axis.text.x=element_text(color=colors_list, size=8, angle=35, vjust=0.8, hjust=0.5),
-#         axis.title.x=element_text(vjust=3),
-#         legend.position=c(0.15, -0.4),
-#         legend.direction="horizontal",
-#         plot.margin = unit(c(1,1,1,1), "cm"))
-# 
-# bar_graph
+bar_graph <- ggplot() +
+  geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
+           width=0.7, color="black", size=0.8, position="dodge", stat="identity") +
+  scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
+  scale_x_discrete(labels=c("Acid\nneutralizing\ncapacity", "Dissolved\noxygen", "pH",
+                             "Salinity", "Total\nnitrogen", "Total\nphosphorus", "Water\ntemperature")) +
+  xlab("Parameter") +
+  ylab("% Passing") +
+  coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 110), expand=F) +
+  geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
+            position=position_dodge2(width=0.7, preserve="total"), size=3) +
+  scale_color_manual(values=c("#E32636", "black"), guide="none") +
+  theme_bw() +
+  theme(axis.text.x=element_text(color=colors_list, size=8, angle=35, vjust=0.8, hjust=0.5),
+        axis.title.x=element_text(vjust=3),
+        legend.position=c(0.15, -0.22),
+        legend.direction="horizontal",
+        plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm"))
+
+#bar_graph
 
 ```
 
@@ -292,7 +312,7 @@ colors_list <- print(colors_list$colors)
 #             position=position_dodge2(width=0.7, preserve="total"), size=3) +
 #   scale_color_manual(values=c("#E32636", "black"), guide="none") +
 #   theme_bw() +
-#   theme(axis.text.x=element_text(color=colors_list, angle=40, vjust=0.5, hjust=0.5))
+#   theme(axis.text.x=element_text(angle=40, vjust=0.5, hjust=0.5))
 # 
 # #bar_graph
 # 
@@ -302,79 +322,79 @@ colors_list <- print(colors_list$colors)
 
 ```{r plotly graph, echo=F, warning=F}
 ##editing table df
-table3 <- table %>%
-  select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
-  mutate(colors=case_when(percent_pass.x==100~"black",
-                          percent_pass.x!=100~"#E32636")) %>%
-  mutate(CharacteristicName=case_when(CharacteristicName=="Acid neutralizing capacity"~"Acid\nneutralizing\ncapacity",
-                                      CharacteristicName=="Dissolved oxygen"~"Dissolved\noxygen",
-                                      CharacteristicName=="Total nitrogen"~"Total\nnitrogen",
-                                      CharacteristicName=="Total phosphorus"~"Total\nphosphorus",
-                                      CharacteristicName=="Water temperature"~"Water\ntemperature",
-                                      T~CharacteristicName))
-
-colnames(table3) <- c("CharacteristicName", "current", "prev", "colors")
-
-##making bar graph in plotly
-bar_graph <- plot_ly(table3, x=~CharacteristicName, y=~prev,
-                     type="bar", name="2019–23",
-                     text=~prev, textposition="auto",
-                     marker=list(color="#D9D9D9",
-                                 line=list(color="black",
-                                           width = 1.5)))
-bar_graph <- bar_graph %>%
-  add_trace(y=~current, name="2024",
-            text=~current, textposition="auto",
-            marker=list(color="#8DA0CB",
-                        line=list(color="black",
-                                  width = 1.5))) %>%
-  layout(yaxis=list(title="% Passing"),
-         xaxis=list(title="Parameter", standoff=50,  showticklabels=F),
-         barmode="group", margin=list(t=50, b=75, l=75, r=50)) %>%
-  add_annotations(x=table3$CharacteristicName[1], y=-0.25,
-                  xref="x", yref="paper",
-                  text=table3$CharacteristicName[1],
-                  font=list(color=table3$colors[1], size=10),
-                  textangle=-30,
-                  showarrow=F) %>%
-  add_annotations(x=table3$CharacteristicName[2], y=-0.25,
-                  xref="x", yref="paper",
-                  text=table3$CharacteristicName[2],
-                  font=list(color=table3$colors[2], size=10),
-                  textangle=-30,
-                  showarrow=F) %>%
-  add_annotations(x=table3$CharacteristicName[3], y=-0.25,
-                  xref="x", yref="paper",
-                  text=table3$CharacteristicName[3],
-                  font=list(color=table3$colors[3], size=10),
-                  textangle=-30,
-                  showarrow=F) %>%
-  add_annotations(x=table3$CharacteristicName[4], y=-0.25,
-                  xref="x", yref="paper",
-                  text=table3$CharacteristicName[4],
-                  font=list(color=table3$colors[4], size=10),
-                  textangle=-30,
-                  showarrow=F) %>%
-  add_annotations(x=table3$CharacteristicName[5], y=-0.25,
-                  xref="x", yref="paper",
-                  text=table3$CharacteristicName[5],
-                  font=list(color=table3$colors[5], size=10),
-                  textangle=-30,
-                  showarrow=F) %>%
-  add_annotations(x=table3$CharacteristicName[6], y=-0.25,
-                  xref="x", yref="paper",
-                  text=table3$CharacteristicName[6],
-                  font=list(color=table3$colors[6], size=10),
-                  textangle=-30,
-                  showarrow=F) %>%
-  add_annotations(x=table3$CharacteristicName[7], y=-0.25,
-                  xref="x", yref="paper",
-                  text=table3$CharacteristicName[7],
-                  font=list(color=table3$colors[7], size=10),
-                  textangle=-30,
-                  showarrow=F)
-
-bar_graph
+# table3 <- table %>%
+#   select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
+#   mutate(colors=case_when(percent_pass.x==100~"black",
+#                           percent_pass.x!=100~"#E32636")) %>%
+#   mutate(CharacteristicName=case_when(CharacteristicName=="Acid neutralizing capacity"~"Acid\nneutralizing\ncapacity",
+#                                       CharacteristicName=="Dissolved oxygen"~"Dissolved\noxygen",
+#                                       CharacteristicName=="Total nitrogen"~"Total\nnitrogen",
+#                                       CharacteristicName=="Total phosphorus"~"Total\nphosphorus",
+#                                       CharacteristicName=="Water temperature"~"Water\ntemperature",
+#                                       T~CharacteristicName))
+# 
+# colnames(table3) <- c("CharacteristicName", "current", "prev", "colors")
+# 
+# ##making bar graph in plotly
+# bar_graph <- plot_ly(table3, x=~CharacteristicName, y=~prev,
+#                      type="bar", name="2019–23",
+#                      text=~prev, textposition="auto",
+#                      marker=list(color="#D9D9D9",
+#                                  line=list(color="black",
+#                                            width = 1.5)))
+# bar_graph <- bar_graph %>%
+#   add_trace(y=~current, name="2024",
+#             text=~current, textposition="auto",
+#             marker=list(color="#8DA0CB",
+#                         line=list(color="black",
+#                                   width = 1.5))) %>%
+#   layout(yaxis=list(title="% Passing"),
+#          xaxis=list(title="Parameter", standoff=50,  showticklabels=F),
+#          barmode="group", margin=list(t=50, b=75, l=75, r=50)) %>%
+#   add_annotations(x=table3$CharacteristicName[1], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[1],
+#                   font=list(color=table3$colors[1], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[2], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[2],
+#                   font=list(color=table3$colors[2], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[3], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[3],
+#                   font=list(color=table3$colors[3], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[4], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[4],
+#                   font=list(color=table3$colors[4], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[5], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[5],
+#                   font=list(color=table3$colors[5], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[6], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[6],
+#                   font=list(color=table3$colors[6], size=10),
+#                   textangle=-30,
+#                   showarrow=F) %>%
+#   add_annotations(x=table3$CharacteristicName[7], y=-0.25,
+#                   xref="x", yref="paper",
+#                   text=table3$CharacteristicName[7],
+#                   font=list(color=table3$colors[7], size=10),
+#                   textangle=-30,
+#                   showarrow=F)
+# 
+# bar_graph
 
 
   # add_annotations(x=-0.1, y=c(0, 20, 40, 60, 80, 100),
@@ -388,8 +408,39 @@ bar_graph
 
 ```
 
-![](Site images\`r unique(park_data_24$image)`.png){width=200px}
-<!--![](Site images\maps\`r unique(park_data_24$image)`_map2.png){width=200px}-->
+<!--site photo-->
+```{r, echo=F, fig.align="right", out.width="20%"}
+fig_name <- paste(unique(park_data$Park), unique(park_data$Site), sep="_")
+
+file_path <- paste("Site images/", fig_name, ".png", sep="")
+
+#include_graphics(file_path)
+
+```
+
+<!--site map-->
+```{r, echo=F, fig.align="right", out.width="20%"}
+# map_path <- paste("Maps/", fig_name, "_map.png", sep="")
+# 
+# include_graphics(map_path)
+
+```
+
+<!--pasting in figures-->
+```{r, echo=F, fig.show="hold", out.width="50%"}
+
+# bar_graph
+# include_graphics(file_path)
+
+site_image <- include_graphics(file_path)
+
+```
+
+```{r}
+bar_graph + plot_spacer() + site_image + plot_spacer() + 
+
+```
+
 
 <!--function for adding icons to parameters with exceedances-->
 ```{r icons, include=F}
@@ -399,6 +450,7 @@ icon <- function(df) {
   if (df$pass_fail=="F") {
     #git_emoji("triangular_flag")
     "!"
+    #"\U1F6A9"
     } else{print(" ")}
 
 }
@@ -412,39 +464,40 @@ cat("\\twocolumn")
 
 ```
 
-Acid Neutralizing Capacity (ANC) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Acid neutralizing capacity",])`}}        
-**Acceptable values:** Above `r park_data_24$threshold[park_data_24$CharacteristicName=="Acid neutralizing capacity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid neutralizing capacity"]`   
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Acid neutralizing capacity"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Acid neutralizing capacity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid neutralizing capacity"]`  
-ANC is a measure of water’s ability to buffer acidic inputs. ANC measurements have never fallen below the acceptable threshold since monitoring began in 2005.   
+\vspace{-4cm}
+Acid Neutralizing Capacity (ANC) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}        
+**Acceptable values:** Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
+ANC is a measure of water’s ability to buffer acidic inputs. ANC measurements have never fallen below the acceptable threshold since monitoring began in 2005. <!--`r asis_output("\U2666")`-->  
    
-Dissolved Oxygen (DO) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Dissolved oxygen",])`}}    
-**Acceptable values:** Above `r park_data_24$threshold[park_data_24$CharacteristicName=="Dissolved oxygen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen"]`  
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Dissolved oxygen"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Dissolved oxygen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen"]`   
+Dissolved Oxygen (DO) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Dissolved oxygen (DO)",])`}}    
+**Acceptable values:** Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]`   
 Aquatic organisms rely on DO to survive. Cooler water holds more DO, so measurements vary by season. DO has not fallen below the acceptable threshold since 2006.  
   
 pH \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="pH",])`}}    
-**Acceptable range:** `r park_data_24$threshold[park_data_24$CharacteristicName=="pH"]`  
+**Acceptable range:** `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="pH"]`    
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$max[park_data_24$CharacteristicName=="pH"]`  
 pH is a measure of how acidic or basic a liquid is.  pH measurements have fallen within the acceptable range since monitoring began in 2005.  
   
 Salinity \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Salinity",])`}}    
-**Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
+**Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Salinity"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
 Road salt is the main cause of high salinity in NCR streams.  Salinity has not surpassed the acceptable threshold at Flowing Springs Run since 2017.  
   
-Total Nitrogen \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total nitrogen",])`}}   
-**Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Total nitrogen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total nitrogen"]`  
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total nitrogen"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total nitrogen"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total nitrogen"]`  
+Total Nitrogen \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
+**Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 Nitrogen is commonly used in agricultural fertilizers. Under high concentrations, it can adversely affect aquatic life. All total nitrogen measurements since 2016 have exceeded the acceptable threshold.  
   
-Total Phosphorus \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total phosphorus",])`}}   
-**Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Total phosphorus"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total phosphorus"]`  
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total phosphorus"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total phosphorus"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total phosphorus"]`  
+Total Phosphorus \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
+**Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 Phosphorus is often a limiting nutrient in freshwater streams, meaning a small increase in phosphorus concentration can lead to algal blooms. All observations in 2024 exceeded the threshold.  
   
-Water Temperature \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Water temperature",])`}}    
-**Acceptable values:** Below `r park_data_24$threshold[park_data_24$CharacteristicName=="Water temperature"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Water temperature"]`  
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Water temperature"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Water temperature"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Water temperature"]`   
+Water Temperature \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Temperature, water",])`}}    
+**Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`  
+**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Temperature, water"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`   
 Water temperature measurements have remained below the acceptable threshold since monitoring began in 2005.  
   
 **Water Quality Monitoring in the NCR**  
