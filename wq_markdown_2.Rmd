@@ -3,6 +3,7 @@ title: |
   | `r params$Year` Water Quality Annual Summary: 
   | `r params$Park`, `r params$Site`
 output: pdf_document
+always_allow_html: true
 params:
   Park: "Prince William Forest Park"
   Site: "Orenda Run"
@@ -194,22 +195,21 @@ table <- table %>%
   select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
   ##rounding percent pass to two decimal places
   mutate(percent_pass.x=round(percent_pass.x, digits=0)) %>%
-  mutate(percent_pass.y=round(percent_pass.y, digits=0)) %>%
+  mutate(percent_pass.y=round(percent_pass.y, digits=0)) 
   ##adding colors column based on percent pass
-  mutate(colors1=if_else(percent_pass.x==100, "#ACE5EE", "#FE6F5E")) %>%
-  mutate(colors2=if_else(percent_pass.y==100, "#ACE5EE", "#FE6F5E"))
+  # mutate(colors1=if_else(percent_pass.x==100, "#ACE5EE", "#FE6F5E")) %>%
+  # mutate(colors2=if_else(percent_pass.y==100, "#ACE5EE", "#FE6F5E"))
 
 ##changing table column names
 # colnames(table) = c("Parameter", "% passing 2024", "% passing 2019-23",
 #                     "colors1", "colors2")
 
 table2 <- table %>%
-  # select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
-  pivot_longer(!(CharacteristicName | colors1 | colors2), names_to="years", values_to="percent_pass") %>%
+  pivot_longer(!(CharacteristicName), names_to="years", values_to="percent_pass") %>%
   mutate(years=case_when(years=="percent_pass.x"~"2024",
                          years=="percent_pass.y"~"2019–23")) %>%
-  mutate(colors=case_when(colors1=="#ACE5EE"~"black",
-                          colors1=="#FE6F5E"~"#E32636")) %>%
+  mutate(colors=case_when(percent_pass==100~"black",
+                          percent_pass!=100~"#E32636")) %>%
   mutate(x_pos=case_when(CharacteristicName=="Acid neutralizing capacity"~1,
                          CharacteristicName=="Dissolved oxygen"~2,
                          CharacteristicName=="pH"~3,
@@ -224,13 +224,23 @@ colnames(table2) = c("Parameter", "x_pos", "years", "percent_pass", "colors")
 colors_list <- table2 %>%
   mutate(Parameter=case_when(Parameter=="pH"~"PH",
                              Parameter!="pH"~Parameter)) %>%
-  group_by(Parameter, colors) %>%
+  group_by(Parameter, colors, years) %>%
   summarize() 
+
+##function  
+# color_list <- function(df) {
+#   
+#   if (nrow(df[(df$Parameter=="Acid neutralizing capacity" & colors_list$colors=="black"),])==2) {
+#   df <- df[!(df$CharacteristicName=="Acid neutralizing capacity" & df$years=="2019–23"),]
+#   } else{df <- df}
+#   
+# }
 
 colors_list <- print(colors_list$colors)
 
 ```
 
+<!--% pass table-->
 ```{r table, echo=F, warning=F}
 # kbl(table[,1:3], longtable=F) %>%
 #   kable_paper() %>%
@@ -241,28 +251,30 @@ colors_list <- print(colors_list$colors)
 ```
 
 <!--creating figure-->
-```{r figure, echo=F, warning=F, fig.width = 5, fig.height = 3}
+```{r figure, echo=F, warning=F, fig.width = 5, fig.height = 4}
 ##creating bar graph
-bar_graph <- ggplot() +
-  geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
-           width=0.7, color="black", size=0.8, position="dodge", stat="identity") +
-  scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
-  scale_x_discrete(labels=c("Acid\nneutralizing\ncapacity", "Dissolved\noxygen", "pH",
-                             "Salinity", "Total\nnitrogen", "Total\nphosphorus", "Water\ntemperature")) +
-  xlab("Parameter") +
-  ylab("% Passing") +
-  coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 107), expand=F) +
-  geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
-            position=position_dodge2(width=0.7, preserve="total"), size=2.5) +
-  scale_color_manual(values=c("#E32636", "black"), guide="none") +
-  theme_bw() +
-  theme(axis.text.x=element_text(color=colors_list, size=8, angle=35, vjust=0.8, hjust=0.5),
-        axis.title.x=element_text(vjust=3),
-        legend.position=c(0.15, -0.25),
-        legend.direction="horizontal",
-        plot.margin = unit(c(1,1,1,1), "cm"))
-
-bar_graph
+# bar_graph <- ggplot() +
+#   geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
+#            width=0.7, color="black", size=0.8, position="dodge", stat="identity") +
+#   scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
+#   scale_x_discrete(labels=c("Acid\nneutralizing\ncapacity", "Dissolved\noxygen", "pH",
+#                              "Salinity", "Total\nnitrogen", "Total\nphosphorus", "Water\ntemperature")) +
+#   xlab("Parameter") +
+#   ylab("% Passing") +
+#   coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 110), expand=F) +
+#   # geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
+#   #           position=position_dodge2(width=0.7, preserve="total"), size=2.5) +
+#   geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
+#             position=position_dodge2(width=0.7, preserve="total"), size=2.5) +
+#   scale_color_manual(values=c("#E32636", "black"), guide="none") +
+#   theme_bw() +
+#   theme(axis.text.x=element_text(color=colors_list, size=8, angle=35, vjust=0.8, hjust=0.5),
+#         axis.title.x=element_text(vjust=3),
+#         legend.position=c(0.15, -0.4),
+#         legend.direction="horizontal",
+#         plot.margin = unit(c(1,1,1,1), "cm"))
+# 
+# bar_graph
 
 ```
 
@@ -290,79 +302,79 @@ bar_graph
 
 ```{r plotly graph, echo=F, warning=F}
 ##editing table df
-# table3 <- table %>%
-#   select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
-#   mutate(colors=case_when(percent_pass.x==100~"black",
-#                           percent_pass.x!=100~"#E32636")) %>%
-#   mutate(CharacteristicName=case_when(CharacteristicName=="Acid neutralizing capacity"~"Acid\nneutralizing\ncapacity",
-#                                       CharacteristicName=="Dissolved oxygen"~"Dissolved\noxygen",
-#                                       CharacteristicName=="Total nitrogen"~"Total\nnitrogen",
-#                                       CharacteristicName=="Total phosphorus"~"Total\nphosphorus",
-#                                       CharacteristicName=="Water temperature"~"Water\ntemperature",
-#                                       T~CharacteristicName))
-# 
-# colnames(table3) <- c("CharacteristicName", "current", "prev", "colors")
-# 
-# ##making bar graph in plotly
-# bar_graph <- plot_ly(table3, x=~CharacteristicName, y=~prev,
-#                      type="bar", name="2019–23",
-#                      text=~prev, textposition="auto",
-#                      marker=list(color="#D9D9D9",
-#                                  line=list(color="black",
-#                                            width = 1.5)))
-# bar_graph <- bar_graph %>%
-#   add_trace(y=~current, name="2024",
-#             text=~current, textposition="auto",
-#             marker=list(color="#8DA0CB",
-#                         line=list(color="black",
-#                                   width = 1.5))) %>%
-#   layout(yaxis=list(title="% Passing"),
-#          xaxis=list(title="Parameter", standoff=50,  showticklabels=F),
-#          barmode="group", margin=list(t=50, b=75, l=75, r=50)) %>%
-#   add_annotations(x=table3$CharacteristicName[1], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[1],
-#                   font=list(color=table3$colors[1], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[2], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[2],
-#                   font=list(color=table3$colors[2], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[3], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[3],
-#                   font=list(color=table3$colors[3], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[4], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[4],
-#                   font=list(color=table3$colors[4], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[5], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[5],
-#                   font=list(color=table3$colors[5], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[6], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[6],
-#                   font=list(color=table3$colors[6], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[7], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[7],
-#                   font=list(color=table3$colors[7], size=10),
-#                   textangle=-30,
-#                   showarrow=F)
-# 
-# bar_graph
+table3 <- table %>%
+  select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
+  mutate(colors=case_when(percent_pass.x==100~"black",
+                          percent_pass.x!=100~"#E32636")) %>%
+  mutate(CharacteristicName=case_when(CharacteristicName=="Acid neutralizing capacity"~"Acid\nneutralizing\ncapacity",
+                                      CharacteristicName=="Dissolved oxygen"~"Dissolved\noxygen",
+                                      CharacteristicName=="Total nitrogen"~"Total\nnitrogen",
+                                      CharacteristicName=="Total phosphorus"~"Total\nphosphorus",
+                                      CharacteristicName=="Water temperature"~"Water\ntemperature",
+                                      T~CharacteristicName))
+
+colnames(table3) <- c("CharacteristicName", "current", "prev", "colors")
+
+##making bar graph in plotly
+bar_graph <- plot_ly(table3, x=~CharacteristicName, y=~prev,
+                     type="bar", name="2019–23",
+                     text=~prev, textposition="auto",
+                     marker=list(color="#D9D9D9",
+                                 line=list(color="black",
+                                           width = 1.5)))
+bar_graph <- bar_graph %>%
+  add_trace(y=~current, name="2024",
+            text=~current, textposition="auto",
+            marker=list(color="#8DA0CB",
+                        line=list(color="black",
+                                  width = 1.5))) %>%
+  layout(yaxis=list(title="% Passing"),
+         xaxis=list(title="Parameter", standoff=50,  showticklabels=F),
+         barmode="group", margin=list(t=50, b=75, l=75, r=50)) %>%
+  add_annotations(x=table3$CharacteristicName[1], y=-0.25,
+                  xref="x", yref="paper",
+                  text=table3$CharacteristicName[1],
+                  font=list(color=table3$colors[1], size=10),
+                  textangle=-30,
+                  showarrow=F) %>%
+  add_annotations(x=table3$CharacteristicName[2], y=-0.25,
+                  xref="x", yref="paper",
+                  text=table3$CharacteristicName[2],
+                  font=list(color=table3$colors[2], size=10),
+                  textangle=-30,
+                  showarrow=F) %>%
+  add_annotations(x=table3$CharacteristicName[3], y=-0.25,
+                  xref="x", yref="paper",
+                  text=table3$CharacteristicName[3],
+                  font=list(color=table3$colors[3], size=10),
+                  textangle=-30,
+                  showarrow=F) %>%
+  add_annotations(x=table3$CharacteristicName[4], y=-0.25,
+                  xref="x", yref="paper",
+                  text=table3$CharacteristicName[4],
+                  font=list(color=table3$colors[4], size=10),
+                  textangle=-30,
+                  showarrow=F) %>%
+  add_annotations(x=table3$CharacteristicName[5], y=-0.25,
+                  xref="x", yref="paper",
+                  text=table3$CharacteristicName[5],
+                  font=list(color=table3$colors[5], size=10),
+                  textangle=-30,
+                  showarrow=F) %>%
+  add_annotations(x=table3$CharacteristicName[6], y=-0.25,
+                  xref="x", yref="paper",
+                  text=table3$CharacteristicName[6],
+                  font=list(color=table3$colors[6], size=10),
+                  textangle=-30,
+                  showarrow=F) %>%
+  add_annotations(x=table3$CharacteristicName[7], y=-0.25,
+                  xref="x", yref="paper",
+                  text=table3$CharacteristicName[7],
+                  font=list(color=table3$colors[7], size=10),
+                  textangle=-30,
+                  showarrow=F)
+
+bar_graph
 
 
   # add_annotations(x=-0.1, y=c(0, 20, 40, 60, 80, 100),
@@ -376,7 +388,8 @@ bar_graph
 
 ```
 
-![](Site images\`r unique(park_data_24$image)`.png){width=100px, style="float:right"}
+![](Site images\`r unique(park_data_24$image)`.png){width=200px}
+<!--![](Site images\maps\`r unique(park_data_24$image)`_map2.png){width=200px}-->
 
 <!--function for adding icons to parameters with exceedances-->
 ```{r icons, include=F}

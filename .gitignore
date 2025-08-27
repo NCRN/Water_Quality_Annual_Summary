@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+*.csv
+*.pdf
+wq_markdown.Rmd
+*.jpg
+*.png
