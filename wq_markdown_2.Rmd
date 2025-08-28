@@ -24,18 +24,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load packages, include=F}
 ##load packages
 library(tinytex)
-library(shiny)
+#library(shiny)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
 library(knitr)
-#install.packages("kableExtra")
-library(kableExtra)
-#install.packages("Rmoji")
-library(Rmoji)
-#install.packages("plotly")
-library(plotly)
 library(ggplot2)
 
 ```
@@ -43,34 +37,32 @@ library(ggplot2)
 ```{r wq data, include=F}
 metadata <- read.csv("wqp_ncrnwater_metadata.csv")
 metadata <- metadata %>%
-  separate(SiteCode, c("Network", "Park", "Site"))
+  tidyr::separate(SiteCode, c("Network", "Park", "Site"))
 
 park <- metadata %>%
-  filter(Park==params$Park & Site==params$Site) 
-  # filter(Park=="NACE", Site=="OXRU") 
+  dplyr::filter(Park==params$Park & Site==params$Site)
+  # dplyr::filter(Park=="NACE", Site=="OXRU")
 mypark <- unique(park$LongName)
 mysite <- unique(park$SiteName)
 
 thresholds <- metadata %>%
-  select(SiteCodeWQX, DataName, Category, LowerPoint, UpperPoint) %>%
-  select(SiteCodeWQX, DataName, LowerPoint, UpperPoint)
+  dplyr::select(SiteCodeWQX, DataName, LowerPoint, UpperPoint)
 
 colnames(thresholds) <- c("MonitoringLocationIdentifier", "CharacteristicName", "LowerPoint", "UpperPoint")
 
 ##loading in data
-current_wd <- getwd()
-setwd(current_wd)
 wq_data <- read.csv("wqp.csv")
 
 ##selecting columns
-wq_data1 <- wq_data[, c("ActivityStartDate", "MonitoringLocationIdentifier",
-                       "MonitoringLocationName", "CharacteristicName", 
-                       "ResultMeasureValue", "ResultMeasure.MeasureUnitCode")]
+wq_data1 <- wq_data %>%
+  dplyr::select(ActivityStartDate, MonitoringLocationIdentifier,
+         MonitoringLocationName, CharacteristicName, 
+         ResultMeasureValue, ResultMeasure.MeasureUnitCode)
 
 ##converting date to date object
 wq_data1$ActivityStartDate <- as.Date(wq_data1$ActivityStartDate, format = "%Y-%m-%d")
 ##extracting year
-wq_data1$year <- year(wq_data1$ActivityStartDate)
+wq_data1$sample_year <- lubridate::year(wq_data1$ActivityStartDate)
 
 ##converting ResultMeasureValue to numeric object
 wq_data1$ResultMeasureValue <- as.numeric(wq_data1$ResultMeasureValue)
@@ -84,35 +76,35 @@ wq_data_merged <- merge(wq_data1, thresholds,
 
 ##data wrangling
 wq_data2 <- wq_data_merged %>%
-  filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
+  dplyr::filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
                                    "Total Nitrogen, mixed forms",
                                    "Total Phosphorus, mixed forms",
                                    "pH", "Dissolved oxygen (DO)",
                                    "Salinity", "Temperature, water")) %>%
-  filter(year>2018) %>%
-  separate(MonitoringLocationIdentifier, c("Network", "Park", "Site")) %>%
-  select(ActivityStartDate, Park, Site, MonitoringLocationName, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, year, LowerPoint, UpperPoint) %>%
-  mutate(karst=case_when(Park=="ANTI" | Park=="HAFE" | Park=="MONO" ~ "karst",
+  dplyr::filter(sample_year>2018) %>%
+  tidyr::separate(MonitoringLocationIdentifier, c("Network", "Park", "Site")) %>%
+  dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, LowerPoint, UpperPoint) %>%
+  dplyr::mutate(karst=case_when(Park=="ANTI" | Park=="HAFE" | Park=="MONO" ~ "karst",
                          Park!="ANTI" | Park!="HAFE" | Park!="MONO" ~ "non-karst")) %>%
-  mutate(nutrient_ecoregion=case_when(Park=="ANTI" | Park=="CATO" | Park=="HAFE" ~ "XI",
+  dplyr::mutate(nutrient_ecoregion=case_when(Park=="ANTI" | Park=="CATO" | Park=="HAFE" ~ "XI",
                                       Park!="ANTI" | Park!="CATO" | Park!="HAFE" ~ "IX")) %>%
-  mutate(cold_water=case_when(Park=="CATO" ~ "cold",
+  dplyr::mutate(cold_water=case_when(Park=="CATO" ~ "cold",
                               Park!="CATO" ~ "warm")) %>%
-  mutate(pass_fail=case_when(ResultMeasureValue>UpperPoint~"F",
+  dplyr::mutate(pass_fail=case_when(ResultMeasureValue>UpperPoint~"F",
                              ResultMeasureValue<LowerPoint~"F",
                              TRUE~"P")) %>%
-  mutate(ResultMeasure.MeasureUnitCode=case_when(ResultMeasure.MeasureUnitCode=="deg C"~"\u00B0C",
+  dplyr::mutate(ResultMeasure.MeasureUnitCode=case_when(ResultMeasure.MeasureUnitCode=="deg C"~"\u00B0C",
                                                  ResultMeasure.MeasureUnitCode!="deg C"~ResultMeasure.MeasureUnitCode)) %>%
-  mutate(UpperPoint=as.character(UpperPoint)) %>%
-  mutate(UpperPoint=case_when(CharacteristicName=="pH"~"9",
+  dplyr::mutate(UpperPoint=as.character(UpperPoint)) %>%
+  dplyr::mutate(UpperPoint=case_when(CharacteristicName=="pH"~"9",
                               CharacteristicName!="pH"~UpperPoint)) %>%
-  select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, year, LowerPoint, UpperPoint, pass_fail)
+  dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, LowerPoint, UpperPoint, pass_fail)
 
 ##changing column names
 colnames(wq_data2) <- c("Date", "Park", "Site", "SiteName","karst", 
                         "nutrient_ecoregion", "cold_water",
                         "CharacteristicName", "ResultMeasureValue", 
-                        "unit", "year", "LowerPoint","UpperPoint",
+                        "unit", "sample_year", "LowerPoint","UpperPoint",
                         "pass_fail")
 
 ```
@@ -120,25 +112,25 @@ colnames(wq_data2) <- c("Date", "Park", "Site", "SiteName","karst",
 ```{r park wq data, include=F}
 ##filtering data frame by parameters
 park_data <- wq_data2 %>%
-  filter(Park==params$Park, Site==params$Site)
+  dplyr::filter(Park==params$Park, Site==params$Site)
 
 # park_data <- wq_data2 %>%
-#   filter(Park=="NACE", Site=="OXRU")
+#   dplyr::filter(Park=="NACE", Site=="OXRU")
 
 ##2024 data
 park_data_24 <- park_data %>%
-  filter(year==2024) %>%
-  group_by(Site, CharacteristicName) %>%
+  dplyr::filter(sample_year==2024) %>%
+  dplyr::group_by(Site, CharacteristicName) %>%
   ##calculating percent pass
-  mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
+  dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
   ##adding minimum and maximum value columns
-  mutate(min=min(ResultMeasureValue),
+  dplyr::mutate(min=min(ResultMeasureValue),
          max=max(ResultMeasureValue)) %>%
   ##rounding to two decimal places in min and max columns
-  mutate(min=round(min, digits=2),
+  dplyr::mutate(min=round(min, digits=2),
          max=round(max, digits=2)) %>%
-  group_by(Site, cold_water, karst, nutrient_ecoregion, CharacteristicName, unit, LowerPoint, UpperPoint, min, max, pass_fail, percent_pass) %>%
-  summarize()
+  dplyr::group_by(Site, cold_water, karst, nutrient_ecoregion, CharacteristicName, unit, LowerPoint, UpperPoint, min, max, pass_fail, percent_pass) %>%
+  dplyr::summarize()
 
 ##function to remove duplicate rows for parameters with both passing and failing values 
 for(i in unique(park_data_24$CharacteristicName)) {
@@ -150,11 +142,11 @@ for(i in unique(park_data_24$CharacteristicName)) {
 
 ##2019-23 data
 park_data_19_23 <- park_data %>%
-  filter(year!=2024) %>%
-  group_by(Site, CharacteristicName) %>%
-  mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
-  group_by(Site, CharacteristicName, percent_pass) %>%
-  summarize()
+  dplyr::filter(sample_year!=2024) %>%
+  dplyr::group_by(Site, CharacteristicName) %>%
+  dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
+  dplyr::group_by(Site, CharacteristicName, percent_pass) %>%
+  dplyr::summarize()
 
 ```
 
@@ -165,42 +157,31 @@ table <- merge(park_data_24, park_data_19_23, by="CharacteristicName")
 
 ##creating data frame for table
 table <- table %>%
-  select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
+  dplyr::select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
   ##rounding percent pass to two decimal places
-  mutate(percent_pass.x=round(percent_pass.x, digits=0)) %>%
-  mutate(percent_pass.y=round(percent_pass.y, digits=0)) 
-  ##adding colors column based on percent pass
-  # mutate(colors1=if_else(percent_pass.x==100, "#ACE5EE", "#FE6F5E")) %>%
-  # mutate(colors2=if_else(percent_pass.y==100, "#ACE5EE", "#FE6F5E"))
-
-##changing table column names
-# colnames(table) = c("Parameter", "% passing 2024", "% passing 2019-23",
-#                     "colors1", "colors2")
+  dplyr::mutate(percent_pass.x=round(percent_pass.x, digits=0)) %>%
+  dplyr::mutate(percent_pass.y=round(percent_pass.y, digits=0)) 
 
 table2 <- table %>%
-  pivot_longer(!(CharacteristicName), names_to="years", values_to="percent_pass") %>%
-  mutate(years=case_when(years=="percent_pass.x"~"2024",
+  tidyr::pivot_longer(!(CharacteristicName), names_to="years", values_to="percent_pass") %>%
+  dplyr::mutate(years=case_when(years=="percent_pass.x"~"2024",
                          years=="percent_pass.y"~"2019–23")) %>%
-  mutate(colors=case_when(percent_pass==100~"black",
+  dplyr::mutate(colors=case_when(percent_pass==100~"black",
                           percent_pass!=100~"#E32636")) %>%
-  mutate(x_pos=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~1,
+  dplyr::mutate(x_pos=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~1,
                          CharacteristicName=="Dissolved oxygen (DO)"~2,
                          CharacteristicName=="pH"~3,
                          CharacteristicName=="Salinity"~4,
                          CharacteristicName=="Total Nitrogen, mixed forms"~5,
                          CharacteristicName=="Total Phosphorus, mixed forms"~6,
                          CharacteristicName=="Temperature, water"~7)) %>%
-  select(CharacteristicName, x_pos, years, percent_pass, colors)
+  dplyr::select(CharacteristicName, x_pos, years, percent_pass, colors)
 
 colnames(table2) = c("Parameter", "x_pos", "years", "percent_pass", "colors")
 
 colors_list <- table2 %>%
-  # mutate(Parameter=case_when(Parameter=="pH"~"PH",
-  #                            Parameter=="Temperature, water"~"Water temperature",
-  #                            Parameter=="Acid"
-  #                            Parameter!="pH"~Parameter)) %>%
-  group_by(Parameter, colors, years) %>%
-  summarize() 
+  dplyr::group_by(Parameter, colors, years) %>%
+  dplyr::summarize() 
 
 colors_list <- colors_list[!colors_list$years=="2019–23",]
 
@@ -210,26 +191,7 @@ colors_list$Parameter=c("Acid neutralizing capacity", "Dissolved oxygen",
 
 colors_list <- colors_list[order(colors_list$Parameter),]
 
-##function  
-# color_list <- function(df) {
-#   
-#   if (nrow(df[(df$Parameter=="Acid neutralizing capacity" & colors_list$colors=="black"),])==2) {
-#   df <- df[!(df$CharacteristicName=="Acid neutralizing capacity" & df$years=="2019–23"),]
-#   } else{df <- df}
-#   
-# }
-
 colors_list <- print(colors_list$colors)
-
-```
-
-<!--% pass table-->
-```{r table, echo=F, warning=F}
-# kbl(table[,1:3], longtable=F) %>%
-#   kable_paper() %>%
-#   row_spec(0, color="black") %>%
-#   column_spec(2, background=c(table$colors1)) %>%
-#   column_spec(3, background=c(table$colors2))
 
 ```
 
@@ -256,116 +218,6 @@ bar_graph <- ggplot() +
         plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm"))
 
 #bar_graph
-
-```
-
-```{r, include=F}
-# bar_graph <- ggplot() +
-#   geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
-#            width=0.7, color="black", position="dodge", stat="identity") +
-#   scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
-#   scale_x_discrete(labels=c("Acid neutralizing\ncapacity", "Dissolved oxygen", "pH",
-#                              "Salinity", "Total nitrogen", "Total phosphorus", "Water temperature")) +
-#   xlab("Parameter") +
-#   ylab("% Passing") +
-#   coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 107), expand=F) +
-#   geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
-#             position=position_dodge2(width=0.7, preserve="total"), size=3) +
-#   scale_color_manual(values=c("#E32636", "black"), guide="none") +
-#   theme_bw() +
-#   theme(axis.text.x=element_text(angle=40, vjust=0.5, hjust=0.5))
-# 
-# #bar_graph
-# 
-# ggplotly(bar_graph)
-
-```
-
-```{r plotly graph, echo=F, warning=F}
-##editing table df
-# table3 <- table %>%
-#   select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
-#   mutate(colors=case_when(percent_pass.x==100~"black",
-#                           percent_pass.x!=100~"#E32636")) %>%
-#   mutate(CharacteristicName=case_when(CharacteristicName=="Acid neutralizing capacity"~"Acid\nneutralizing\ncapacity",
-#                                       CharacteristicName=="Dissolved oxygen"~"Dissolved\noxygen",
-#                                       CharacteristicName=="Total nitrogen"~"Total\nnitrogen",
-#                                       CharacteristicName=="Total phosphorus"~"Total\nphosphorus",
-#                                       CharacteristicName=="Water temperature"~"Water\ntemperature",
-#                                       T~CharacteristicName))
-# 
-# colnames(table3) <- c("CharacteristicName", "current", "prev", "colors")
-# 
-# ##making bar graph in plotly
-# bar_graph <- plot_ly(table3, x=~CharacteristicName, y=~prev,
-#                      type="bar", name="2019–23",
-#                      text=~prev, textposition="auto",
-#                      marker=list(color="#D9D9D9",
-#                                  line=list(color="black",
-#                                            width = 1.5)))
-# bar_graph <- bar_graph %>%
-#   add_trace(y=~current, name="2024",
-#             text=~current, textposition="auto",
-#             marker=list(color="#8DA0CB",
-#                         line=list(color="black",
-#                                   width = 1.5))) %>%
-#   layout(yaxis=list(title="% Passing"),
-#          xaxis=list(title="Parameter", standoff=50,  showticklabels=F),
-#          barmode="group", margin=list(t=50, b=75, l=75, r=50)) %>%
-#   add_annotations(x=table3$CharacteristicName[1], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[1],
-#                   font=list(color=table3$colors[1], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[2], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[2],
-#                   font=list(color=table3$colors[2], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[3], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[3],
-#                   font=list(color=table3$colors[3], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[4], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[4],
-#                   font=list(color=table3$colors[4], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[5], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[5],
-#                   font=list(color=table3$colors[5], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[6], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[6],
-#                   font=list(color=table3$colors[6], size=10),
-#                   textangle=-30,
-#                   showarrow=F) %>%
-#   add_annotations(x=table3$CharacteristicName[7], y=-0.25,
-#                   xref="x", yref="paper",
-#                   text=table3$CharacteristicName[7],
-#                   font=list(color=table3$colors[7], size=10),
-#                   textangle=-30,
-#                   showarrow=F)
-# 
-# bar_graph
-
-
-  # add_annotations(x=-0.1, y=c(0, 20, 40, 60, 80, 100),
-  #                 xref="paper", yref="y",
-  #                 text=c("0", "20", "40", "60", "80", "100"),
-  #                 font=list(color="black"),
-  #                 showarrow=F)
-
-
-# kaleido(bar_graph, "bar_graph.pdf")
 
 ```
 
@@ -418,7 +270,6 @@ plot_grid(bar_graph, site_photo, site_map, ncol=2,
 icon <- function(df) {
 
   if (df$pass_fail=="F") {
-    #git_emoji("triangular_flag")
     "!"
     #"\U1F6A9"
     } else{print(" ")}
