@@ -5,6 +5,7 @@ title: |
 output:
   pdf_document:
     latex_engine: xelatex
+classoption: twocolumn
 mainfont: Arial
 header-includes:
 - \pagenumbering{gobble}
@@ -23,14 +24,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r load packages, include=F}
 ##load packages
-library(tinytex)
+#library(tinytex)
 #library(shiny)
-library(tidyr)
+#library(tidyr)
 library(dplyr)
 library(ggplot2)
-library(lubridate)
-library(knitr)
-library(ggplot2)
+#library(lubridate)
+#library(knitr)
+#library(cowplot)
 
 ```
 
@@ -227,9 +228,9 @@ fig_name <- paste(unique(park_data$Park), unique(park_data$Site), sep="_")
 
 file_path <- paste("Site images/", fig_name, ".png", sep="")
 
-#include_graphics(file_path)
+#knitr::include_graphics(file_path)
 
-site_image <- include_graphics(file_path)
+site_image <- knitr::include_graphics(file_path)
 
 ```
 
@@ -237,15 +238,15 @@ site_image <- include_graphics(file_path)
 ```{r, echo=F, fig.align="right", out.width="20%"}
  map_path <- paste("maps/", fig_name, "_map2.png", sep="")
 
-# include_graphics(map_path)
+# knitr::include_graphics(map_path)
 
-site_map <- include_graphics(map_path)
+site_map <- knitr::include_graphics(map_path)
 
 ```
 
 <!--pasting in figures-->
 ```{r, echo=F, fig.show="hold", out.width="50%", fig.ncol=2}
-
+ 
 # bar_graph
 # site_image
 # site_map
@@ -254,12 +255,14 @@ site_map <- include_graphics(map_path)
 
 ```{r, echo=F}
 
-site_photo <- ggdraw() + draw_image(file_path)
-site_map <- ggdraw() + draw_image(map_path)
+# site_photo <- cowplot::ggdraw() + cowplot::draw_image(file_path)
+# site_map <- cowplot::ggdraw() + cowplot::draw_image(map_path)
+# 
+# cowplot::plot_grid(bar_graph, site_photo, NULL, site_map, ncol=2, byrow=T, rel_heights=c(2, 1))
 
-plot_grid(bar_graph, site_photo, site_map, ncol=2,
-          rel_heights=c(1,1), byrow=F,
-          layout_matrix=matrix(c(1, 2, 1, 3), nrow=2, byrow=T))
+# cowplot::plot_grid(bar_graph, site_photo, site_map, ncol=2,
+#           rel_heights=c(1,1), byrow=F,
+#           layout_matrix=matrix(c(1, 2, 1, 3), nrow=2, byrow=T))
 
 ```
 
@@ -270,9 +273,9 @@ plot_grid(bar_graph, site_photo, site_map, ncol=2,
 icon <- function(df) {
 
   if (df$pass_fail=="F") {
-    "!"
-    #"\U1F6A9"
-    } else{print(" ")}
+    #"!"
+    knitr::asis_output("\U2666")
+    } else{" "} #else{print(" ")}
 
 }
 
@@ -281,15 +284,19 @@ icon <- function(df) {
 <!--start two column format-->
 ```{r, echo=F, results="asis"}
 
-cat("\\twocolumn")
+# cat("\\twocolumn")
 
 ```
 
-\vspace{-4cm}
+```{r, echo=F, out.width="120%"}
+bar_graph
+
+```
+
 Acid Neutralizing Capacity (ANC) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}        
 **Acceptable values:** Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
-ANC is a measure of water’s ability to buffer acidic inputs. ANC measurements have never fallen below the acceptable threshold since monitoring began in 2005. <!--`r asis_output("\U2666")`-->  
+ANC is a measure of water’s ability to buffer acidic inputs. ANC measurements have never fallen below the acceptable threshold since monitoring began in 2005.  
    
 Dissolved Oxygen (DO) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Dissolved oxygen (DO)",])`}}    
 **Acceptable values:** Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]`  
@@ -310,6 +317,13 @@ Total Nitrogen \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$Charact
 **Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 Nitrogen is commonly used in agricultural fertilizers. Under high concentrations, it can adversely affect aquatic life. All total nitrogen measurements since 2016 have exceeded the acceptable threshold.  
+
+```{r, echo=F, fig.show='hold', out.width="70%", fig.ncol=2, fig.align="right"}
+ 
+site_image
+site_map
+
+```
   
 Total Phosphorus \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
 **Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
