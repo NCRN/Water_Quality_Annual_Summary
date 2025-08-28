@@ -197,7 +197,7 @@ colors_list <- print(colors_list$colors)
 ```
 
 <!--creating figure-->
-```{r figure, echo=F, warning=F, fig.width = 4, fig.height = 3, fig.align="left"}
+```{r figure, echo=F, warning=F}
 ##creating bar graph
 bar_graph <- ggplot() +
   geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
@@ -212,9 +212,10 @@ bar_graph <- ggplot() +
             position=position_dodge2(width=0.7, preserve="total"), size=3) +
   scale_color_manual(values=c("#E32636", "black"), guide="none") +
   theme_bw() +
-  theme(axis.text.x=element_text(color=colors_list, size=8, angle=35, vjust=0.8, hjust=0.5),
-        axis.title.x=element_text(vjust=3),
-        legend.position=c(0.15, -0.22),
+  theme(axis.text.x=element_text(color=colors_list, size=9, angle=35, vjust=0.8, hjust=0.5),
+        axis.title.x=element_text(vjust=3, size=12),
+        axis.title.y=element_text(size=12),
+        legend.position=c(0.8, -0.23),
         legend.direction="horizontal",
         plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm"))
 
@@ -244,29 +245,6 @@ site_map <- knitr::include_graphics(map_path)
 
 ```
 
-<!--pasting in figures-->
-```{r, echo=F, fig.show="hold", out.width="50%", fig.ncol=2}
- 
-# bar_graph
-# site_image
-# site_map
-
-```
-
-```{r, echo=F}
-
-# site_photo <- cowplot::ggdraw() + cowplot::draw_image(file_path)
-# site_map <- cowplot::ggdraw() + cowplot::draw_image(map_path)
-# 
-# cowplot::plot_grid(bar_graph, site_photo, NULL, site_map, ncol=2, byrow=T, rel_heights=c(2, 1))
-
-# cowplot::plot_grid(bar_graph, site_photo, site_map, ncol=2,
-#           rel_heights=c(1,1), byrow=F,
-#           layout_matrix=matrix(c(1, 2, 1, 3), nrow=2, byrow=T))
-
-```
-
-
 <!--function for adding icons to parameters with exceedances-->
 ```{r icons, include=F}
 ##creating function to print icons
@@ -281,13 +259,7 @@ icon <- function(df) {
 
 ```
 
-<!--start two column format-->
-```{r, echo=F, results="asis"}
-
-# cat("\\twocolumn")
-
-```
-
+<!--print figure-->
 ```{r, echo=F, out.width="120%"}
 bar_graph
 
