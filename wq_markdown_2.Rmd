@@ -42,7 +42,10 @@ metadata <- metadata %>%
 
 park <- metadata %>%
   dplyr::filter(Park==params$Park & Site==params$Site)
-  # dplyr::filter(Park=="NACE", Site=="OXRU")
+
+# park <- metadata %>%
+#   dplyr::filter(Park=="NACE", Site=="OXRU")
+
 mypark <- unique(park$LongName)
 mysite <- unique(park$SiteName)
 
@@ -99,14 +102,31 @@ wq_data2 <- wq_data_merged %>%
   dplyr::mutate(UpperPoint=as.character(UpperPoint)) %>%
   dplyr::mutate(UpperPoint=case_when(CharacteristicName=="pH"~"9",
                               CharacteristicName!="pH"~UpperPoint)) %>%
-  dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, LowerPoint, UpperPoint, pass_fail)
+  dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, LowerPoint, UpperPoint, pass_fail) %>%
+  dplyr::group_by(Site, CharacteristicName, sample_year) %>%
+  ##calculating percent pass
+  dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100)
+  # dplyr::mutate(text=case_when(percent_pass==100~"text1",
+  #                              (percent_pass==100 & sample_year==2024) & (percent_pass!=100 & sample_year!=2024)~"text2",
+  #                              percent_pass==0~"text3",
+  #                              percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & sample_year==2024)~"text4")) %>%
+  # dplyr::group_by(MonitoringLocationName, CharacteristicName) %>%
+  # dplyr::mutate(last_ex=case_when(pass_fail=="F"~max(sample_year),
+  #                                 pass_fail=="T"~NA))
 
 ##changing column names
 colnames(wq_data2) <- c("Date", "Park", "Site", "SiteName","karst", 
                         "nutrient_ecoregion", "cold_water",
                         "CharacteristicName", "ResultMeasureValue", 
                         "unit", "sample_year", "LowerPoint","UpperPoint",
-                        "pass_fail")
+                        "pass_fail", "percent_pass")
+
+# wq_data2$last_ex <- max(unique(wq_data2$sample_year[wq_data2$pass_fail=="F" & wq_data2$SiteName==mysite & wq_data2$CharacteristicName=="Total Phosphorus, mixed forms"]))
+
+# wq_data2 <- wq_data2 %>%
+#   dplyr::group_by(SiteName, CharacteristicName, sample_year) %>%
+#   dplyr::mutate(obs_year=n()) %>%
+#   dplyr::mutate(exceed=sum(pass_fail=="F"))
 
 ```
 
@@ -131,7 +151,9 @@ park_data_24 <- park_data %>%
   dplyr::mutate(min=round(min, digits=2),
          max=round(max, digits=2)) %>%
   dplyr::group_by(Site, cold_water, karst, nutrient_ecoregion, CharacteristicName, unit, LowerPoint, UpperPoint, min, max, pass_fail, percent_pass) %>%
-  dplyr::summarize()
+  dplyr::summarize() 
+  # dplyr::mutate(exceed_description=case_when(percent_pass<50~"most",
+  #                                            percent_pass>=50 & ))
 
 ##function to remove duplicate rows for parameters with both passing and failing values 
 for(i in unique(park_data_24$CharacteristicName)) {
@@ -224,7 +246,7 @@ bar_graph <- ggplot() +
 ```
 
 <!--site photo-->
-```{r, echo=F, fig.align="right", out.width="20%"}
+```{r site photo, echo=F}
 fig_name <- paste(unique(park_data$Park), unique(park_data$Site), sep="_")
 
 file_path <- paste("Site images/", fig_name, ".png", sep="")
@@ -236,12 +258,104 @@ site_image <- knitr::include_graphics(file_path)
 ```
 
 <!--site map-->
-```{r, echo=F, fig.align="right", out.width="20%"}
+```{r site map, echo=F}
  map_path <- paste("maps/", fig_name, "_map2.png", sep="")
 
 # knitr::include_graphics(map_path)
 
 site_map <- knitr::include_graphics(map_path)
+
+```
+
+```{r, echo=F}
+##statements:
+##if 100% pass always (percent_pass==100): [parameter] measurements at [site] have not exceeded the acceptable threshold since monitoring began in [year].
+##if 100% pass in 2024, but not previously ((percent_pass==100 & year==2024) & (percent_pass!=100 & year!=2024)): The last [parameter] exceedance at [site] was recorded in [year].
+##if parameter has never passed (percent_pass==0): [parameter] measurements at [site] have never met the acceptable threshold since monitoring began in [year].
+##otherwise (percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & year==2024)): The last acceptable [parameter] measurement at [site] was recorded in [year].
+
+text <- function(df, site) {
+  
+  if (mean(df$percent_pass[df$SiteName==site])==100) {
+    paste(text1)
+  } else if (unique(df$percent_pass[df$SiteName==site & df$sample_year==2024])==100 &
+             mean(df$percent_pass[df$SiteName==site])!=100) {
+    paste(text2)
+  } else if (mean(df$percent_pass[df$SiteName==site])==0) {
+    paste(text3)
+  } else if (unique(df$percent_pass[df$SiteName==site])!=100 &
+      mean(df$percent_pass[df$SiteName==site])!=0 &
+      unique(df$percent_pass[df$sample_year==2024 & df$SiteName==site])!=100) {
+    paste(text4)
+  }
+    
+}
+
+##function to find last exceedance year
+find_last_ex <- function(df, site) {
+  
+  if(nrow(df[df$pass_fail=="F",])!=0) {
+    print(max(df$sample_year[df$pass_fail=="F" & df$SiteName==site]))
+  } else if (nrow(df[df$pass_fail=="F",])==0) {
+    print(NA)
+  }
+      
+}
+
+##testing function 
+find_last_ex(wq_data2[wq_data2$CharacteristicName=="Salinity",], mysite)
+
+##`r find_last_ex(wq_data2)`
+
+text1 <- paste("measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", sep=" ")
+
+text2 <- "test2"
+
+text3 <- "test3"
+
+text4 <- "test4"
+
+# text <- function(df, site, char) {
+#   
+#   if (unique(df$percent_pass[df$CharacteristicName==char & df$SiteName==site])==100) {
+#     paste(text1)
+#   } else if (unique(df$percent_pass[df$CharacteristicName==char & df$SiteName==site & df$sample_year==2024])==100 &
+#              mean(df$percent_pass[df$CharacteristicName==char & df$SiteName==site])!=100) {
+#     paste(text2)
+#   } else if (unique(df$percent_pass[df$CharacteristicName==char & df$SiteName==site])==0) {
+#     paste(text3)
+#   } else if (unique(df$percent_pass[df$CharacteristicName==char & df$SiteName==site])!=100 &
+#       unique(df$percent_pass[df$CharacteristicName==char & df$SiteName==site])!=0 &
+#       unique(df$percent_pass[df$CharacteristicName==char & df$sample_year==2024 & df$SiteName==site])!=100) {
+#     paste(text4)
+#   }
+#     
+# }
+
+# text <- function(df, char) {
+#   
+#   if (unique(df$percent_pass[df$CharacteristicName==char])==100) {
+#     paste(text1)
+#   } else{""}
+#   
+#   if (unique(df$percent_pass[df$CharacteristicName==char & df$sample_year==2024])==100 &
+#       mean(df$percent_pass[df$CharacteristicName==char])!=100) {
+#     paste(text2)
+#   } else{""}
+#   
+#   if (unique(df$percent_pass[df$CharacteristicName==char])==0) {
+#     paste(text3)
+#   } else{""}
+#   
+#   if (unique(df$percent_pass[df$CharacteristicName==char])!=100 &
+#       unique(df$percent_pass[df$CharacteristicName==char])!=0 &
+#       unique(df$percent_pass[df$CharacteristicName==char & df$sample_year==2024])!=100) {
+#     paste(text4)
+#   } else{""}
+#     
+# }
+  
+## no_ex <- "`r park_data_24$CharacteristicName[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` 'r text1' 'r start year'"
 
 ```
 
@@ -253,7 +367,7 @@ icon <- function(df) {
   if (df$pass_fail=="F") {
     #"!"
     knitr::asis_output("\U2666")
-    } else{" "} #else{print(" ")}
+    } else{" "} 
 
 }
 
@@ -290,6 +404,7 @@ Total Nitrogen \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$Charact
 **2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 Nitrogen is commonly used in agricultural fertilizers. Under high concentrations, it can adversely affect aquatic life. All total nitrogen measurements since 2016 have exceeded the acceptable threshold.  
 
+<!--print images-->
 ```{r, echo=F, fig.show='hold', out.width="70%", fig.ncol=2, fig.align="right"}
  
 site_image
