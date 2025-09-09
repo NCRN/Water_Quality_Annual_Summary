@@ -72,11 +72,19 @@ wq_data1$sample_year <- lubridate::year(wq_data1$ActivityStartDate)
 wq_data1$ResultMeasureValue <- as.numeric(wq_data1$ResultMeasureValue)
 
 wq_data1 <- wq_data1 %>%
-  na.omit()
+  na.omit() 
 
 wq_data_merged <- merge(wq_data1, thresholds,
                         by=c("MonitoringLocationIdentifier", 
                              "CharacteristicName"), all=T)
+
+wq_data_merged <- wq_data_merged %>%
+  tidyr::separate(MonitoringLocationIdentifier, c("Network", "Park", "Site")) %>%
+  dplyr::filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
+                                   "Total Nitrogen, mixed forms",
+                                   "Total Phosphorus, mixed forms",
+                                   "pH", "Dissolved oxygen (DO)",
+                                   "Salinity", "Temperature, water"))
 
 ##data wrangling
 wq_data2 <- wq_data_merged %>%
@@ -275,60 +283,30 @@ site_map <- knitr::include_graphics(map_path)
 ##mean(percent_pass)!=0 & (percent_pass==0 & sample_year==2024): The last acceptable [parameter] measurement at [site] was recorded in [year].
 ##otherwise (percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & year==2024)): 
 
-# text <- function(df, site) {
-#   
-#   if (mean(df$percent_pass[df$SiteName==site])==100) {
-#     paste(text1)
-#   } else if (unique(df$percent_pass[df$SiteName==site & df$sample_year==2024])==100 &
-#              mean(df$percent_pass[df$SiteName==site])!=100) {
-#     paste(text2)
-#   } else if (mean(df$percent_pass[df$SiteName==site])==0) {
-#     paste(text3)
-#   } else if (unique(df$percent_pass[df$SiteName==site])!=100 &
-#       mean(df$percent_pass[df$SiteName==site])!=0 &
-#       unique(df$percent_pass[df$sample_year==2024 & df$SiteName==site])!=100) {
-#     paste(text4)
-#   }
-#     
-# }
+my_char <- ""
 
 text <- function(df, site, char) {
   
-  assign("my_char", char, envir=.GlobalEnv)
+  #assign("my_char", char, envir=.GlobalEnv)
+  my_char <- paste(my_char, char)
   
   if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])==100) {
-    #assign("my_char", char, envir=.GlobalEnv)
     print(text1)
   } else if (unique(df$percent_pass[df$SiteName==site & df$CharacteristicName==char & df$sample_year==2024])==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=100) {
-    #assign("my_char", char, envir=.GlobalEnv)
     print(text2)
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])==0) {
-    #assign("my_char", char, envir=.GlobalEnv)
     print(text3)
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=100 &
       mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=0 &
       unique(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharacteristicName==char])!=100) {
-    #assign("my_char", char, envir=.GlobalEnv)
     print(text5)
-  } 
+  }
     
 }
 
-##testing function
-text(wq_data2, mysite, "Total Phosphorus, mixed forms")
 
-##function to find last exceedance year
-# find_last_ex <- function(df, site) {
-#   
-#   if(nrow(df[df$pass_fail=="F",])!=0) {
-#     print(max(df$sample_year[df$pass_fail=="F" & df$SiteName==site]))
-#   } else if (nrow(df[df$pass_fail=="F",])==0) {
-#     print(NA)
-#   }
-#       
-# }
-
+##function to find last exceedance
 find_last_ex <- function(df, site, char) {
   
   if(nrow(df[df$pass_fail=="F" & df$CharacteristicName==char,])!=0) {
@@ -338,7 +316,8 @@ find_last_ex <- function(df, site, char) {
 }
 
 ##testing function 
-find_last_ex(wq_data2, mysite, my_char)
+find_last_ex(wq_data2, mysite, "Salinity")
+
 
 ##function to find last pass year
 find_last_pass <- function(df, site, char) {
@@ -349,22 +328,31 @@ find_last_pass <- function(df, site, char) {
   
 }
 
+##testing function
 find_last_pass(wq_data2, mysite, "Total Phosphorus, mixed forms")
 
-##function to show increase or decrease in % pass
-increase_decrease <- function(df, char) {
+
+##new data frame to find first year recorded
+wq_first_year <- wq_data1 %>%
+  dplyr::filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
+                                   "Total Nitrogen, mixed forms",
+                                   "Total Phosphorus, mixed forms",
+                                   "pH", "Dissolved oxygen (DO)",
+                                   "Salinity", "Temperature, water")) %>%
+  tidyr::separate(MonitoringLocationIdentifier, c("Network", "Park", "Site"))
+
+colnames(wq_first_year) <- c("ActivityStartDate", "Network", "Park", "Site", "SiteName", "CharacteristicName", "ResultMeasureValue", "unit", "sample_year")
+
+##function to find first year recorded
+find_first_year <- function(df, site, char) {
   
-  if(df$percent_pass.x[df$CharacteristicName==char]>df$percent_pass.y[df$CharacteristicName==char]) {
-    print("increased")
-  } else if (df$percent_pass.x[df$CharacteristicName==char]<df$percent_pass.y[df$CharacteristicName==char]) {
-    print("decreased")
-  } else if (df$percent_pass.x[df$CharacteristicName==char]==df$percent_pass.y[df$CharacteristicName==char]) {
-    print("remained the same")
-  } 
+  print(min(df$sample_year[df$SiteName==site & df$CharacteristicName==char]))
   
 }
 
-increase_decrease(table, "pH")
+##testing function
+find_first_year(wq_first_year, mysite, "Total Nitrogen, mixed forms")
+
 
 ##text1
 text1 <- paste(my_char, "measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", sep=" ")
@@ -384,7 +372,31 @@ text4 <- paste("The last acceptable", my_char, "measurement at", mysite, "was re
 ##text5
 text5 <- "test5"
 
+
+##testing function
+text(wq_data2, mysite, "Total Phosphorus, mixed forms")
+
 ```
+
+```{r, echo=F}
+##function to show increase or decrease in % pass
+increase_decrease <- function(df, char) {
+  
+  if(df$percent_pass.x[df$CharacteristicName==char]>df$percent_pass.y[df$CharacteristicName==char]) {
+    print("increased")
+  } else if (df$percent_pass.x[df$CharacteristicName==char]<df$percent_pass.y[df$CharacteristicName==char]) {
+    print("decreased")
+  } else if (df$percent_pass.x[df$CharacteristicName==char]==df$percent_pass.y[df$CharacteristicName==char]) {
+    print("remained the same")
+  } 
+  
+}
+
+##testing function
+increase_decrease(table, "pH")
+
+```
+
 
 <!--function for adding icons to parameters with exceedances-->
 ```{r icons, include=F}
