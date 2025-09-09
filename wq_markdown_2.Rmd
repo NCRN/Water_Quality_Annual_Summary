@@ -78,14 +78,6 @@ wq_data_merged <- merge(wq_data1, thresholds,
                         by=c("MonitoringLocationIdentifier", 
                              "CharacteristicName"), all=T)
 
-wq_data_merged <- wq_data_merged %>%
-  tidyr::separate(MonitoringLocationIdentifier, c("Network", "Park", "Site")) %>%
-  dplyr::filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
-                                   "Total Nitrogen, mixed forms",
-                                   "Total Phosphorus, mixed forms",
-                                   "pH", "Dissolved oxygen (DO)",
-                                   "Salinity", "Temperature, water"))
-
 ##data wrangling
 wq_data2 <- wq_data_merged %>%
   dplyr::filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
@@ -227,7 +219,7 @@ colors_list <- print(colors_list$colors)
 ```
 
 <!--creating figure-->
-```{r figure, echo=F, warning=F}
+```{r create figure, echo=F, warning=F}
 ##creating bar graph
 bar_graph <- ggplot() +
   geom_bar(data=table2, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
@@ -275,36 +267,16 @@ site_map <- knitr::include_graphics(map_path)
 
 ```
 
-```{r, echo=F}
-##statements:
-##if 100% pass always (percent_pass==100): [parameter] measurements at [site] have not exceeded the acceptable threshold since monitoring began in [year].
-##if 100% pass in 2024, but not previously ((percent_pass==100 & year==2024) & (percent_pass!=100 & year!=2024)): The last [parameter] exceedance at [site] was recorded in [year].
-##if parameter has never passed (percent_pass==0): [parameter] measurements at [site] have never met the acceptable threshold since monitoring began in [year].
-##mean(percent_pass)!=0 & (percent_pass==0 & sample_year==2024): The last acceptable [parameter] measurement at [site] was recorded in [year].
-##otherwise (percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & year==2024)): 
-
-my_char <- ""
-
-text <- function(df, site, char) {
-  
-  #assign("my_char", char, envir=.GlobalEnv)
-  my_char <- paste(my_char, char)
-  
-  if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])==100) {
-    print(text1)
-  } else if (unique(df$percent_pass[df$SiteName==site & df$CharacteristicName==char & df$sample_year==2024])==100 &
-             mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=100) {
-    print(text2)
-  } else if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])==0) {
-    print(text3)
-  } else if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=100 &
-      mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=0 &
-      unique(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharacteristicName==char])!=100) {
-    print(text5)
-  }
-    
-}
-
+```{r text functions, echo=F, include=F, warning=F}
+##new data frame with simpler characteristic names
+wq_data2 <- wq_data2 %>%
+  dplyr::mutate(CharacteristicName=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"ANC",
+                                             CharacteristicName=="Dissolved oxygen (DO)"~"DO",
+                                             CharacteristicName=="pH"~"pH",
+                                             CharacteristicName=="Salinity"~"Salinity",
+                                             CharacteristicName=="Temperature, water"~"Water temperature",
+                                             CharacteristicName=="Total Nitrogen, mixed forms"~"Total nitrogen",
+                                             CharacteristicName=="Total Phosphorus, mixed forms"~"Total phosphorus"))
 
 ##function to find last exceedance
 find_last_ex <- function(df, site, char) {
@@ -329,7 +301,7 @@ find_last_pass <- function(df, site, char) {
 }
 
 ##testing function
-find_last_pass(wq_data2, mysite, "Total Phosphorus, mixed forms")
+find_last_pass(wq_data2, mysite, "Total phosphorus")
 
 
 ##new data frame to find first year recorded
@@ -339,7 +311,14 @@ wq_first_year <- wq_data1 %>%
                                    "Total Phosphorus, mixed forms",
                                    "pH", "Dissolved oxygen (DO)",
                                    "Salinity", "Temperature, water")) %>%
-  tidyr::separate(MonitoringLocationIdentifier, c("Network", "Park", "Site"))
+  tidyr::separate(MonitoringLocationIdentifier, c("Network", "Park", "Site")) %>%
+  dplyr::mutate(CharacteristicName=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"ANC",
+                                             CharacteristicName=="Dissolved oxygen (DO)"~"DO",
+                                             CharacteristicName=="pH"~"pH",
+                                             CharacteristicName=="Salinity"~"Salinity",
+                                             CharacteristicName=="Temperature, water"~"Water temperature",
+                                             CharacteristicName=="Total Nitrogen, mixed forms"~"Total nitrogen",
+                                             CharacteristicName=="Total Phosphorus, mixed forms"~"Total phosphorus"))
 
 colnames(wq_first_year) <- c("ActivityStartDate", "Network", "Park", "Site", "SiteName", "CharacteristicName", "ResultMeasureValue", "unit", "sample_year")
 
@@ -351,34 +330,27 @@ find_first_year <- function(df, site, char) {
 }
 
 ##testing function
-find_first_year(wq_first_year, mysite, "Total Phosphorus, mixed forms")
+find_first_year(wq_first_year, mysite, "Total phosphorus")
 
 
-##text1
-text1 <- paste(my_char, "measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", sep=" ")
-##[start year]
+##creating new table data frame with simpler characteristic names
+table <- table %>%
+  dplyr::mutate(CharacteristicName=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"ANC",
+                                             CharacteristicName=="Dissolved oxygen (DO)"~"DO",
+                                             CharacteristicName=="pH"~"pH",
+                                             CharacteristicName=="Salinity"~"Salinity",
+                                             CharacteristicName=="Temperature, water"~"Water temperature",
+                                             CharacteristicName=="Total Nitrogen, mixed forms"~"Total nitrogen",
+                                             CharacteristicName=="Total Phosphorus, mixed forms"~"Total phosphorus")) 
+  
+table <- table %>%
+  dplyr::mutate(char_lower=case_when(CharacteristicName=="Salinity"~"salinity",
+                                     CharacteristicName=="Water temperature"~"water temperature",
+                                     CharacteristicName=="Total nitrogen"~"total nitrogen",
+                                     CharacteristicName=="Total phosphorus"~"total phosphorus",
+                                     TRUE~CharacteristicName))
+  
 
-##text2
-##The last [parameter]
-text2 <- paste("The last", my_char, "exceedance at", mysite, "was recorded in", find_last_ex(wq_data2, mysite, my_char), sep=" ")
-
-##text3
-text3 <- paste(my_char, "measurements at", mysite, "have never met the acceptable threshold since monitoring began in", sep=" ")
-##[start year]
-
-##text4
-text4 <- paste("The last acceptable", my_char, "measurement at", mysite, "was recorded in", find_last_pass(wq_data2, mysite, my_char), sep=" ")
-
-##text5
-text5 <- "test5"
-
-
-##testing function
-text(wq_data2, mysite, "Total Phosphorus, mixed forms")
-
-```
-
-```{r, echo=F}
 ##function to show increase or decrease in % pass
 increase_decrease <- function(df, char) {
   
@@ -393,10 +365,74 @@ increase_decrease <- function(df, char) {
 }
 
 ##testing function
-increase_decrease(table, "pH")
+increase_decrease(table, "Total phosphorus")
+
+
+##statements:
+##if 100% pass always (percent_pass==100): [parameter] measurements at [site] have not exceeded the acceptable threshold since monitoring began in [year].
+##if 100% pass in 2024, but not previously ((percent_pass==100 & year==2024) & (percent_pass!=100 & year!=2024)): The last [parameter] exceedance at [site] was recorded in [year].
+##if parameter has never passed (percent_pass==0): [parameter] measurements at [site] have never met the acceptable threshold since monitoring began in [year].
+##mean(percent_pass)!=0 & (percent_pass==0 & sample_year==2024): The last acceptable [parameter] measurement at [site] was recorded in [year].
+##otherwise (percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & year==2024)): 
+
+#my_char <- ""
+
+text <- function(df, site, char) {
+  
+  assign("my_char", char, envir=.GlobalEnv)
+  #my_char <- paste(my_char, char)
+  
+  text1 <- paste(my_char, "measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", find_first_year(wq_first_year, mysite, my_char), sep=" ") 
+  text2 <- paste("The last", table$char_lower[table$CharacteristicName==my_char], "exceedance at", mysite, "was recorded in", find_last_ex(wq_data2, mysite, my_char), sep=" ")
+  text3 <- paste(my_char, "measurements at", mysite, "have never met the acceptable threshold since monitoring began in", find_first_year(wq_first_year, mysite, my_char), sep=" ") 
+  text4 <- paste("The last acceptable", table$char_lower[table$CharacteristicName==my_char], "measurement at", mysite, "was recorded in", find_last_pass(wq_data2, mysite, my_char), sep=" ")
+  text5 <- paste("percentage of passing", table$char_lower[table$CharacteristicName==my_char], "measurements at", mysite, increase_decrease(table, my_char), "compared to the last five years.", sep=" ")
+  
+  if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])==100) {
+    my_text <- text1
+  } else if (unique(df$percent_pass[df$SiteName==site & df$CharacteristicName==char & df$sample_year==2024])==100 &
+             mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=100) {
+    my_text <- text2
+  } else if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])==0) {
+    my_text <- text3
+  # } else if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=100 &
+  #     mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=0 &
+  #     unique(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharacteristicName==char])!=100) {
+  #   print(text5)
+  } else if (increase_decrease(table, my_char)=="decreased") {
+    my_text <- paste("The", text5, sep=" ")
+  } else if (increase_decrease(table, my_char)=="increased") {
+    my_text <- paste("Although", table$char_lower[table$CharacteristicName==my_char], "measurements at", mysite, "exceeded the acceptable threshold in 2024, the", text5, sep=" ")
+  }
+  
+  return(my_text)
+    
+}
+
+
+# ##text1
+# text1 <- paste(my_char, "measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", sep=" ")
+# ##[start year]
+# 
+# ##text2
+# ##The last [parameter]
+# text2 <- paste("The last", my_char, "exceedance at", mysite, "was recorded in", find_last_ex(wq_data2, mysite, my_char), sep=" ")
+# 
+# ##text3
+# text3 <- paste(my_char, "measurements at", mysite, "have never met the acceptable threshold since monitoring began in", sep=" ")
+# ##[start year]
+# 
+# ##text4
+# text4 <- paste("The last acceptable", my_char, "measurement at", mysite, "was recorded in", find_last_pass(wq_data2, mysite, my_char), sep=" ")
+# 
+# ##text5
+# text5 <- "test5"
+
+
+##testing function
+text(wq_data2, mysite, "Water temperature")
 
 ```
-
 
 <!--function for adding icons to parameters with exceedances-->
 ```{r icons, include=F}
@@ -413,53 +449,53 @@ icon <- function(df) {
 ```
 
 <!--print figure-->
-```{r, echo=F, out.width="120%"}
+```{r print figure, echo=F, out.width="120%"}
 bar_graph
 
 ```
 
-Acid Neutralizing Capacity (ANC) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}        
-**Acceptable values:** Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
-ANC is a measure of water’s ability to buffer acidic inputs. ANC measurements have never fallen below the acceptable threshold since monitoring began in 2005.  
+\large \textbf{Acid Neutralizing Capacity (ANC)} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}       
+\normalsize \textbf{Acceptable values:} Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
+\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
+`r text(wq_data2, mysite, "ANC")`  
    
-Dissolved Oxygen (DO) \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Dissolved oxygen (DO)",])`}}    
-**Acceptable values:** Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]`  
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]`   
-Aquatic organisms rely on DO to survive. Cooler water holds more DO, so measurements vary by season. DO has not fallen below the acceptable threshold since 2006.  
+\large \textbf{Dissolved Oxygen (DO)} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Dissolved oxygen (DO)",])`}}    
+\normalsize \textbf{Acceptable values:} Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]`  
+\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]`   
+`r text(wq_data2, mysite, "DO")`  
   
-pH \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="pH",])`}}    
-**Acceptable range:** `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="pH"]`    
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$max[park_data_24$CharacteristicName=="pH"]`  
-pH is a measure of how acidic or basic a liquid is.  pH measurements have fallen within the acceptable range since monitoring began in 2005.  
+\large \textbf{pH} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="pH",])`}}    
+\normalsize \textbf{Acceptable range:} `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="pH"]`    
+\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$max[park_data_24$CharacteristicName=="pH"]`  
+`r text(wq_data2, mysite, "pH")`  
   
-Salinity \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Salinity",])`}}    
-**Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Salinity"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
-Road salt is the main cause of high salinity in NCR streams.  Salinity has not surpassed the acceptable threshold at Flowing Springs Run since 2017.  
+\large \textbf{Salinity} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Salinity",])`}}    
+\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
+\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Salinity"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
+`r text(wq_data2, mysite, "Salinity")`  
   
-Total Nitrogen \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
-**Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
-Nitrogen is commonly used in agricultural fertilizers. Under high concentrations, it can adversely affect aquatic life. All total nitrogen measurements since 2016 have exceeded the acceptable threshold.  
+\large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
+\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
+\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
+`r text(wq_data2, mysite, "Total nitrogen")`  
 
 <!--print images-->
 ```{r, echo=F, fig.show='hold', out.width="70%", fig.ncol=2, fig.align="right"}
  
-site_image
 site_map
+site_image
 
 ```
   
-Total Phosphorus \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
-**Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
-Phosphorus is often a limiting nutrient in freshwater streams, meaning a small increase in phosphorus concentration can lead to algal blooms. All observations in 2024 exceeded the threshold.  
+\large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
+\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
+\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
+`r text(wq_data2, mysite, "Total phosphorus")`  
   
-Water Temperature \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Temperature, water",])`}}    
-**Acceptable values:** Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`  
-**2024 range:** `r park_data_24$min[park_data_24$CharacteristicName=="Temperature, water"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`   
-Water temperature measurements have remained below the acceptable threshold since monitoring began in 2005.  
+\large \textbf{Water Temperature} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Temperature, water",])`}}    
+\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`  
+\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Temperature, water"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`   
+`r text(wq_data2, mysite, "Water temperature")`  
   
-**Water Quality Monitoring in the NCR**  
-Data on additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids, are available in the [NCRN water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
+# Water Quality Monitoring in the NCR   
+\normalsize Data on additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids, are available in the [NCRN water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
