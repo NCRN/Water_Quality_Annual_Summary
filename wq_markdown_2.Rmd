@@ -351,7 +351,7 @@ find_first_year <- function(df, site, char) {
 }
 
 ##testing function
-find_first_year(wq_first_year, mysite, "Total Nitrogen, mixed forms")
+find_first_year(wq_first_year, mysite, "Total Phosphorus, mixed forms")
 
 
 ##text1
