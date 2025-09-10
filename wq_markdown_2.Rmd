@@ -1,14 +1,14 @@
 ---
-title: |
-  | **`r params$Year` Water Quality Annual Summary** 
-  | `r params$Park`: `r params$Site`
 output:
   pdf_document:
     latex_engine: xelatex
+    fig_caption: yes
+urlcolor: blue
 classoption: twocolumn
 mainfont: Arial
 header-includes:
 - \pagenumbering{gobble}
+- \setlength{\columnsep}{2em}
 geometry: margin=1cm
 always_allow_html: true
 params:
@@ -19,6 +19,7 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(eval.after = "fig.cap")
 
 ```
 
@@ -46,9 +47,21 @@ park <- metadata %>%
 # park <- metadata %>%
 #   dplyr::filter(Park=="NACE", Site=="OXRU")
 
+# park <- metadata %>%
+#   dplyr::filter(Park=="HAFE", Site=="FLSP")
+
 mypark <- unique(park$LongName)
 mysite <- unique(park$SiteName)
 
+```
+
+---
+title: |
+  | **`r params$Year` Water Quality Annual Summary** 
+  | `r mypark`: `r mysite`
+---
+
+```{r, include=F}
 thresholds <- metadata %>%
   dplyr::select(SiteCodeWQX, DataName, LowerPoint, UpperPoint)
 
@@ -61,7 +74,7 @@ wq_data <- read.csv("wqp.csv")
 wq_data1 <- wq_data %>%
   dplyr::select(ActivityStartDate, MonitoringLocationIdentifier,
          MonitoringLocationName, CharacteristicName, 
-         ResultMeasureValue, ResultMeasure.MeasureUnitCode)
+         ResultMeasureValue, ResultMeasure.MeasureUnitCode) 
 
 ##converting date to date object
 wq_data1$ActivityStartDate <- as.Date(wq_data1$ActivityStartDate, format = "%Y-%m-%d")
@@ -78,16 +91,30 @@ wq_data_merged <- merge(wq_data1, thresholds,
                         by=c("MonitoringLocationIdentifier", 
                              "CharacteristicName"), all=T)
 
-##data wrangling
-wq_data2 <- wq_data_merged %>%
+wq_data_merged <- wq_data_merged %>%
   dplyr::filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
                                    "Total Nitrogen, mixed forms",
                                    "Total Phosphorus, mixed forms",
                                    "pH", "Dissolved oxygen (DO)",
                                    "Salinity", "Temperature, water")) %>%
+  dplyr::mutate(CharNameShort=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"ANC",
+                                             CharacteristicName=="Dissolved oxygen (DO)"~"DO",
+                                             CharacteristicName=="pH"~"pH",
+                                             CharacteristicName=="Salinity"~"Salinity",
+                                             CharacteristicName=="Temperature, water"~"Water temperature",
+                                             CharacteristicName=="Total Nitrogen, mixed forms"~"Total nitrogen",
+                                             CharacteristicName=="Total Phosphorus, mixed forms"~"Total phosphorus")) %>%
+  dplyr::mutate(CharNameLower=case_when(CharNameShort=="Salinity"~"salinity",
+                                     CharNameShort=="Water temperature"~"water temperature",
+                                     CharNameShort=="Total nitrogen"~"total nitrogen",
+                                     CharNameShort=="Total phosphorus"~"total phosphorus",
+                                     TRUE~CharNameShort))
+
+##data wrangling
+wq_data2 <- wq_data_merged %>%
   dplyr::filter(sample_year>2018) %>%
   tidyr::separate(MonitoringLocationIdentifier, c("Network", "Park", "Site")) %>%
-  dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, LowerPoint, UpperPoint) %>%
+  dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, LowerPoint, UpperPoint, CharNameShort, CharNameLower) %>%
   dplyr::mutate(karst=case_when(Park=="ANTI" | Park=="HAFE" | Park=="MONO" ~ "karst",
                          Park!="ANTI" | Park!="HAFE" | Park!="MONO" ~ "non-karst")) %>%
   dplyr::mutate(nutrient_ecoregion=case_when(Park=="ANTI" | Park=="CATO" | Park=="HAFE" ~ "XI",
@@ -102,33 +129,21 @@ wq_data2 <- wq_data_merged %>%
   dplyr::mutate(UpperPoint=as.character(UpperPoint)) %>%
   dplyr::mutate(UpperPoint=case_when(CharacteristicName=="pH"~"9",
                               CharacteristicName!="pH"~UpperPoint)) %>%
-  dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, LowerPoint, UpperPoint, pass_fail) %>%
+  dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, CharNameShort, CharNameLower, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, LowerPoint, UpperPoint, pass_fail) %>%
   dplyr::group_by(Site, CharacteristicName, sample_year) %>%
   ##calculating percent pass
-  dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100)
-  # dplyr::mutate(text=case_when(percent_pass==100~"text1",
-  #                              (percent_pass==100 & sample_year==2024) & (percent_pass!=100 & sample_year!=2024)~"text2",
-  #                              percent_pass==0~"text3",
-  #                              percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & sample_year==2024)~"text4")) %>%
-  # dplyr::group_by(MonitoringLocationName, CharacteristicName) %>%
-  # dplyr::mutate(last_ex=case_when(pass_fail=="F"~max(sample_year),
-  #                                 pass_fail=="T"~NA))
+  dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) 
 
 ##changing column names
 colnames(wq_data2) <- c("Date", "Park", "Site", "SiteName","karst", 
                         "nutrient_ecoregion", "cold_water",
-                        "CharacteristicName", "ResultMeasureValue", 
+                        "CharacteristicName", "CharNameShort",
+                        "CharNameLower","ResultMeasureValue", 
                         "unit", "sample_year", "LowerPoint","UpperPoint",
                         "pass_fail", "percent_pass")
 
-# wq_data2$last_ex <- max(unique(wq_data2$sample_year[wq_data2$pass_fail=="F" & wq_data2$SiteName==mysite & wq_data2$CharacteristicName=="Total Phosphorus, mixed forms"]))
-
-# wq_data2 <- wq_data2 %>%
-#   dplyr::group_by(SiteName, CharacteristicName, sample_year) %>%
-#   dplyr::mutate(obs_year=n()) %>%
-#   dplyr::mutate(exceed=sum(pass_fail=="F"))
-
 ```
+
 
 ```{r park wq data, include=F}
 ##filtering data frame by parameters
@@ -137,6 +152,9 @@ park_data <- wq_data2 %>%
 
 # park_data <- wq_data2 %>%
 #   dplyr::filter(Park=="NACE", Site=="OXRU")
+
+# park_data <- wq_data2 %>%
+#   dplyr::filter(Park=="HAFE", Site=="FLSP")
 
 ##2024 data
 park_data_24 <- park_data %>%
@@ -150,10 +168,10 @@ park_data_24 <- park_data %>%
   ##rounding to two decimal places in min and max columns
   dplyr::mutate(min=round(min, digits=2),
          max=round(max, digits=2)) %>%
-  dplyr::group_by(Site, cold_water, karst, nutrient_ecoregion, CharacteristicName, unit, LowerPoint, UpperPoint, min, max, pass_fail, percent_pass) %>%
+  dplyr::group_by(Site, cold_water, karst, nutrient_ecoregion, CharacteristicName,
+                  CharNameShort, CharNameLower, unit, LowerPoint, UpperPoint, min,
+                  max, pass_fail, percent_pass) %>%
   dplyr::summarize() 
-  # dplyr::mutate(exceed_description=case_when(percent_pass<50~"most",
-  #                                            percent_pass>=50 & ))
 
 ##function to remove duplicate rows for parameters with both passing and failing values 
 for(i in unique(park_data_24$CharacteristicName)) {
@@ -180,12 +198,14 @@ table <- merge(park_data_24, park_data_19_23, by="CharacteristicName")
 
 ##creating data frame for table
 table <- table %>%
-  dplyr::select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
+  dplyr::select(CharacteristicName, CharNameShort, CharNameLower,
+                percent_pass.x, percent_pass.y) %>%
   ##rounding percent pass to two decimal places
   dplyr::mutate(percent_pass.x=round(percent_pass.x, digits=0)) %>%
   dplyr::mutate(percent_pass.y=round(percent_pass.y, digits=0)) 
 
 table2 <- table %>%
+  dplyr::select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
   tidyr::pivot_longer(!(CharacteristicName), names_to="years", values_to="percent_pass") %>%
   dplyr::mutate(years=case_when(years=="percent_pass.x"~"2024",
                          years=="percent_pass.y"~"2019–23")) %>%
@@ -268,21 +288,11 @@ site_map <- knitr::include_graphics(map_path)
 ```
 
 ```{r text functions, echo=F, include=F, warning=F}
-##new data frame with simpler characteristic names
-wq_data2 <- wq_data2 %>%
-  dplyr::mutate(CharacteristicName=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"ANC",
-                                             CharacteristicName=="Dissolved oxygen (DO)"~"DO",
-                                             CharacteristicName=="pH"~"pH",
-                                             CharacteristicName=="Salinity"~"Salinity",
-                                             CharacteristicName=="Temperature, water"~"Water temperature",
-                                             CharacteristicName=="Total Nitrogen, mixed forms"~"Total nitrogen",
-                                             CharacteristicName=="Total Phosphorus, mixed forms"~"Total phosphorus"))
-
 ##function to find last exceedance
 find_last_ex <- function(df, site, char) {
   
-  if(nrow(df[df$pass_fail=="F" & df$CharacteristicName==char,])!=0) {
-    print(max(df$sample_year[df$pass_fail=="F" & df$SiteName==site & df$CharacteristicName==char]))
+  if(nrow(df[df$pass_fail=="F" & df$CharNameShort==char,])!=0) {
+    print(max(df$sample_year[df$pass_fail=="F" & df$SiteName==site & df$CharNameShort==char]))
   } else {""}
       
 }
@@ -294,8 +304,8 @@ find_last_ex(wq_data2, mysite, "Salinity")
 ##function to find last pass year
 find_last_pass <- function(df, site, char) {
   
-  if(nrow(df[df$pass_fail=="P" & df$CharacteristicName==char,])!=0) {
-    print(max(df$sample_year[df$pass_fail=="P" & df$SiteName==site & df$CharacteristicName==char]))
+  if(nrow(df[df$pass_fail=="P" & df$CharNameShort==char,])!=0) {
+    print(max(df$sample_year[df$pass_fail=="P" & df$SiteName==site & df$CharNameShort==char]))
   } else {""}
   
 }
@@ -304,61 +314,25 @@ find_last_pass <- function(df, site, char) {
 find_last_pass(wq_data2, mysite, "Total phosphorus")
 
 
-##new data frame to find first year recorded
-wq_first_year <- wq_data1 %>%
-  dplyr::filter(CharacteristicName %in% c("Acid Neutralizing Capacity (ANC)",
-                                   "Total Nitrogen, mixed forms",
-                                   "Total Phosphorus, mixed forms",
-                                   "pH", "Dissolved oxygen (DO)",
-                                   "Salinity", "Temperature, water")) %>%
-  tidyr::separate(MonitoringLocationIdentifier, c("Network", "Park", "Site")) %>%
-  dplyr::mutate(CharacteristicName=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"ANC",
-                                             CharacteristicName=="Dissolved oxygen (DO)"~"DO",
-                                             CharacteristicName=="pH"~"pH",
-                                             CharacteristicName=="Salinity"~"Salinity",
-                                             CharacteristicName=="Temperature, water"~"Water temperature",
-                                             CharacteristicName=="Total Nitrogen, mixed forms"~"Total nitrogen",
-                                             CharacteristicName=="Total Phosphorus, mixed forms"~"Total phosphorus"))
-
-colnames(wq_first_year) <- c("ActivityStartDate", "Network", "Park", "Site", "SiteName", "CharacteristicName", "ResultMeasureValue", "unit", "sample_year")
-
 ##function to find first year recorded
 find_first_year <- function(df, site, char) {
   
-  print(min(df$sample_year[df$SiteName==site & df$CharacteristicName==char]))
+  print(min(df$sample_year[df$MonitoringLocationName==site & df$CharNameShort==char], na.rm=T))
   
 }
 
 ##testing function
-find_first_year(wq_first_year, mysite, "Total phosphorus")
+find_first_year(wq_data_merged, mysite, "ANC")
 
-
-##creating new table data frame with simpler characteristic names
-table <- table %>%
-  dplyr::mutate(CharacteristicName=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"ANC",
-                                             CharacteristicName=="Dissolved oxygen (DO)"~"DO",
-                                             CharacteristicName=="pH"~"pH",
-                                             CharacteristicName=="Salinity"~"Salinity",
-                                             CharacteristicName=="Temperature, water"~"Water temperature",
-                                             CharacteristicName=="Total Nitrogen, mixed forms"~"Total nitrogen",
-                                             CharacteristicName=="Total Phosphorus, mixed forms"~"Total phosphorus")) 
-  
-table <- table %>%
-  dplyr::mutate(char_lower=case_when(CharacteristicName=="Salinity"~"salinity",
-                                     CharacteristicName=="Water temperature"~"water temperature",
-                                     CharacteristicName=="Total nitrogen"~"total nitrogen",
-                                     CharacteristicName=="Total phosphorus"~"total phosphorus",
-                                     TRUE~CharacteristicName))
-  
 
 ##function to show increase or decrease in % pass
 increase_decrease <- function(df, char) {
   
-  if(df$percent_pass.x[df$CharacteristicName==char]>df$percent_pass.y[df$CharacteristicName==char]) {
+  if(df$percent_pass.x[df$CharNameShort==char]>df$percent_pass.y[df$CharNameShort==char]) {
     print("increased")
-  } else if (df$percent_pass.x[df$CharacteristicName==char]<df$percent_pass.y[df$CharacteristicName==char]) {
+  } else if (df$percent_pass.x[df$CharNameShort==char]<df$percent_pass.y[df$CharNameShort==char]) {
     print("decreased")
-  } else if (df$percent_pass.x[df$CharacteristicName==char]==df$percent_pass.y[df$CharacteristicName==char]) {
+  } else if (df$percent_pass.x[df$CharNameShort==char]==df$percent_pass.y[df$CharNameShort==char]) {
     print("remained the same")
   } 
   
@@ -369,68 +343,48 @@ increase_decrease(table, "Total phosphorus")
 
 
 ##statements:
-##if 100% pass always (percent_pass==100): [parameter] measurements at [site] have not exceeded the acceptable threshold since monitoring began in [year].
-##if 100% pass in 2024, but not previously ((percent_pass==100 & year==2024) & (percent_pass!=100 & year!=2024)): The last [parameter] exceedance at [site] was recorded in [year].
-##if parameter has never passed (percent_pass==0): [parameter] measurements at [site] have never met the acceptable threshold since monitoring began in [year].
-##mean(percent_pass)!=0 & (percent_pass==0 & sample_year==2024): The last acceptable [parameter] measurement at [site] was recorded in [year].
-##otherwise (percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & year==2024)): 
+##if 100% pass always (percent_pass==100): text1
+##if 100% pass in 2024, but not previously ((percent_pass==100 & year==2024) & mean(percent_pass)!=100): text2
+##if parameter has never passed (percent_pass==0): text3
+##if parameter previously passed, but not in 2024 (mean(percent_pass)!=0 & (percent_pass==0 & sample_year==2024)): text4
+##otherwise (percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & year==2024)): text5
 
-#my_char <- ""
-
+##creating function to paste text
 text <- function(df, site, char) {
   
+  ##creating characteristic variable
   assign("my_char", char, envir=.GlobalEnv)
-  #my_char <- paste(my_char, char)
   
-  text1 <- paste(my_char, "measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", find_first_year(wq_first_year, mysite, my_char), sep=" ") 
-  text2 <- paste("The last", table$char_lower[table$CharacteristicName==my_char], "exceedance at", mysite, "was recorded in", find_last_ex(wq_data2, mysite, my_char), sep=" ")
-  text3 <- paste(my_char, "measurements at", mysite, "have never met the acceptable threshold since monitoring began in", find_first_year(wq_first_year, mysite, my_char), sep=" ") 
-  text4 <- paste("The last acceptable", table$char_lower[table$CharacteristicName==my_char], "measurement at", mysite, "was recorded in", find_last_pass(wq_data2, mysite, my_char), sep=" ")
-  text5 <- paste("percentage of passing", table$char_lower[table$CharacteristicName==my_char], "measurements at", mysite, increase_decrease(table, my_char), "compared to the last five years.", sep=" ")
+  ##text options
+  text1 <- paste(my_char, "measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
+  text2 <- paste("The last", table$CharNameLower[table$CharNameShort==my_char], "exceedance at", mysite, "was recorded in", find_last_ex(wq_data2, mysite, my_char), sep=" ")
+  text3 <- paste(my_char, "measurements at", mysite, "have never met the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
+  text4 <- paste("The last acceptable", table$CharNameLower[table$CharNameShort==my_char], "measurement at", mysite, "was recorded in", find_last_pass(wq_data2, mysite, my_char), sep=" ")
+  text5 <- paste("percentage of passing", table$CharNameLower[table$CharNameShort==my_char], "measurements", increase_decrease(table, my_char), "compared to the last five years.", sep=" ")
   
-  if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])==100) {
-    my_text <- text1
-  } else if (unique(df$percent_pass[df$SiteName==site & df$CharacteristicName==char & df$sample_year==2024])==100 &
-             mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=100) {
-    my_text <- text2
-  } else if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])==0) {
-    my_text <- text3
-  # } else if (mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=100 &
-  #     mean(df$percent_pass[df$SiteName==site & df$CharacteristicName==char])!=0 &
-  #     unique(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharacteristicName==char])!=100) {
-  #   print(text5)
+  ##conditions for each text option
+  if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char])==100) {
+    my_text <- paste(text1, ".", sep="")
+  } else if (unique(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==2024])==100 &
+             mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char])!=100) {
+    my_text <- paste(text2, ".", sep="")
+  } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char])==0) {
+    my_text <- paste(text3, ".", sep="")
+  } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==2024])==0 &
+             mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char])!=0) {
+    my_text <- paste(text4, ".", sep="")
   } else if (increase_decrease(table, my_char)=="decreased") {
     my_text <- paste("The", text5, sep=" ")
   } else if (increase_decrease(table, my_char)=="increased") {
-    my_text <- paste("Although", table$char_lower[table$CharacteristicName==my_char], "measurements at", mysite, "exceeded the acceptable threshold in 2024, the", text5, sep=" ")
+    my_text <- paste("Although", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "exceeded the acceptable threshold in 2024, the", text5, sep=" ")
   }
   
   return(my_text)
     
 }
 
-
-# ##text1
-# text1 <- paste(my_char, "measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", sep=" ")
-# ##[start year]
-# 
-# ##text2
-# ##The last [parameter]
-# text2 <- paste("The last", my_char, "exceedance at", mysite, "was recorded in", find_last_ex(wq_data2, mysite, my_char), sep=" ")
-# 
-# ##text3
-# text3 <- paste(my_char, "measurements at", mysite, "have never met the acceptable threshold since monitoring began in", sep=" ")
-# ##[start year]
-# 
-# ##text4
-# text4 <- paste("The last acceptable", my_char, "measurement at", mysite, "was recorded in", find_last_pass(wq_data2, mysite, my_char), sep=" ")
-# 
-# ##text5
-# text5 <- "test5"
-
-
 ##testing function
-text(wq_data2, mysite, "Water temperature")
+text(wq_data2, mysite, "Total phosphorus")
 
 ```
 
@@ -480,22 +434,28 @@ bar_graph
 `r text(wq_data2, mysite, "Total nitrogen")`  
 
 <!--print images-->
-```{r, echo=F, fig.show='hold', out.width="70%", fig.ncol=2, fig.align="right"}
+```{r, echo=F, fig.show='hold', out.width="80%", fig.ncol=2, fig.align="right"}
  
 site_map
 site_image
 
+# fig.cap=paste(mysite, "is a", unique(park_data_24$cold_water), "water", unique(park_data_24$karst), "stream.", sep=" ")
+
 ```
-  
+\vspace{-2em}
+\begin{flushright}
+\small `r mysite` is a `r unique(park_data_24$cold_water)`water `r unique(park_data_24$karst)` stream.
+\end{flushright}
+ 
 \large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 \textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 `r text(wq_data2, mysite, "Total phosphorus")`  
-  
+\vspace{8pt}   
 \large \textbf{Water Temperature} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Temperature, water",])`}}    
 \normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`  
 \textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Temperature, water"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`   
 `r text(wq_data2, mysite, "Water temperature")`  
-  
-# Water Quality Monitoring in the NCR   
+\vspace{12pt}  
+\Large \textbf{Water Quality Monitoring in the NCR}   
 \normalsize Data on additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids, are available in the [NCRN water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
