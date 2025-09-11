@@ -363,6 +363,7 @@ text <- function(df, site, char) {
   text5 <- paste("percentage of passing", table$CharNameLower[table$CharNameShort==my_char], "measurements", increase_decrease(table, my_char), "compared to the last five years.", sep=" ")
   
   ##conditions for each text option
+  ##do unique percent_pass instead of mean
   if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char])==100) {
     my_text <- paste(text1, ".", sep="")
   } else if (unique(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==2024])==100 &
