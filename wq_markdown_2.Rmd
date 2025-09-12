@@ -127,14 +127,18 @@ wq_data_total <- wq_data_merged %>%
                              ResultMeasureValue<LowerPoint~"F",
                              TRUE~"P")) %>%
   dplyr::mutate(ResultMeasure.MeasureUnitCode=case_when(ResultMeasure.MeasureUnitCode=="deg C"~"\u00B0C",
-                                                 ResultMeasure.MeasureUnitCode!="deg C"~ResultMeasure.MeasureUnitCode)) %>%
+                                                        ResultMeasure.MeasureUnitCode=="ueq/L"~"\u00B5eq/L",
+                                                        ResultMeasure.MeasureUnitCode=="uS/cm"~"\u00B5S/cm",
+                                                        TRUE~ResultMeasure.MeasureUnitCode)) %>%
   dplyr::mutate(UpperPoint=as.character(UpperPoint)) %>%
   dplyr::mutate(UpperPoint=case_when(CharacteristicName=="pH"~"9",
                               CharacteristicName!="pH"~UpperPoint)) %>%
   dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, CharNameShort, CharNameLower, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, sample_month, sample_my, LowerPoint, UpperPoint, pass_fail) %>%
   dplyr::group_by(Site, CharacteristicName, sample_year) %>%
   ##calculating percent pass
-  dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) 
+  dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
+  dplyr::mutate(pH_exceed=case_when(pass_fail=="F" & CharacteristicName=="pH" & ResultMeasureValue>9~"basic",
+                                    pass_fail=="F" & CharacteristicName=="pH" & ResultMeasureValue<6~"acidic"))
 
 ##changing column names
 colnames(wq_data_total) <- c("Date", "Park", "Site", "SiteName","karst", 
@@ -142,7 +146,7 @@ colnames(wq_data_total) <- c("Date", "Park", "Site", "SiteName","karst",
                         "CharacteristicName", "CharNameShort",
                         "CharNameLower","ResultMeasureValue", 
                         "unit", "sample_year", "sample_month", "month_year",
-                        "LowerPoint","UpperPoint", "pass_fail", "percent_pass")
+                        "LowerPoint","UpperPoint", "pass_fail", "percent_pass", "pH_exceed")
 
 wq_data2 <- wq_data_total %>%
   dplyr::filter(sample_year>2018)
@@ -219,7 +223,7 @@ table2 <- table %>%
   dplyr::mutate(x_pos=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~1,
                          CharacteristicName=="Dissolved oxygen (DO)"~2,
                          CharacteristicName=="pH"~3,
-                         CharacteristicName=="Salinity"~4,
+                         CharacteristicName=="Specific conductance"~4,
                          CharacteristicName=="Total Nitrogen, mixed forms"~5,
                          CharacteristicName=="Total Phosphorus, mixed forms"~6,
                          CharacteristicName=="Temperature, water"~7)) %>%
@@ -251,20 +255,20 @@ bar_graph <- ggplot() +
            width=0.7, color="black", size=0.8, position="dodge", stat="identity") +
   scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
   scale_x_discrete(labels=c("Acid\nneutralizing\ncapacity", "Dissolved\noxygen", "pH",
-                             "Salinity", "Total\nnitrogen", "Total\nphosphorus", "Water\ntemperature")) +
-  xlab("Parameter") +
+                             "Specific\nconductance", "Total\nnitrogen", "Total\nphosphorus", "Water\ntemperature")) +
   ylab("% Passing") +
   coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 110), expand=F) +
   geom_text(data=table2, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
-            position=position_dodge2(width=0.7, preserve="total"), size=3) +
+            position=position_dodge2(width=0.7, preserve="total"), size=4) +
   scale_color_manual(values=c("#E32636", "black"), guide="none") +
   theme_bw() +
-  theme(axis.text.x=element_text(color=colors_list, size=9, angle=35, vjust=0.8, hjust=0.5),
-        axis.title.x=element_text(vjust=3, size=12),
-        axis.title.y=element_text(size=12),
-        legend.position=c(0.8, -0.23),
+  theme(axis.text.x=element_text(color="black", size=11, angle=35, vjust=0.6, hjust=0.5),
+        axis.text.y=element_text(size=11),
+        axis.title.x=element_blank(),
+        axis.title.y=element_text(size=14),
+        legend.position=c(0.17, -0.30),
         legend.direction="horizontal",
-        plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm"))
+        plot.margin = unit(c(0.2,0.2,0.6,0.2), "cm"))
 
 #bar_graph
 
@@ -292,36 +296,17 @@ site_map <- knitr::include_graphics(map_path)
 
 ```
 
+<!--automating text-->
 ```{r text functions, echo=F, include=F, warning=F}
 ##function to find last exceedance
 find_last_ex <- function(df, site, char) {
   
-  #last.ex <- max(df$Date[df$CharNameShort==char & df$Site==site & df$pass_fail=="F"])
-  
   print(unique(na.omit(df$month_year[df$Date==max(df$Date[df$pass_fail=="F" & df$CharNameShort==char & df$SiteName==site])])))
-
-  # print(df$month_year[df$CharNameShort==char &
-  #                       df$Date==max(df$Date[df$pass_fail=="F"], na.rm=T) &
-  #                       df$SiteName==site])
-  
-  # if(nrow(df[df$pass_fail=="F" & df$CharNameShort==char,])!=0) {
-  #   print(max(df$sample_year[df$pass_fail=="F" & df$SiteName==site & df$CharNameShort==char], na.rm=T))
-  # } else {""}
       
 }
 
-# print(unique(na.omit(wq_data_total$month_year[wq_data_total$Date==max(wq_data_total$Date[wq_data_total$pass_fail=="F" & wq_data_total$CharNameShort=="Water temperature" & wq_data_total$SiteName==mysite])])))
-
 ##testing function 
 find_last_ex(wq_data_total, mysite, "Water temperature")
-
-# last.ex <- max(wq_data_total$Date[wq_data_total$CharNameShort=="Water temperature" 
-#                                   & wq_data_total$pass_fail=="F"])
-# last.ex
-# 
-# wq_data_total$month_year[wq_data_total$CharNameShort=="Water temperature" & wq_data_total$Date==last.ex]
-
-# wq_data_total$month_year[wq_data_total$CharNameShort=="Specific conductance" & wq_data_total$Date==max(wq_data_total$Date[wq_data_total$pass_fail=="F"]) & wq_data_total$Site=="OXRU"]
 
 
 ##function to find last passing measurement
@@ -329,26 +314,10 @@ find_last_pass <- function(df, site, char) {
   
   print(unique(na.omit(df$month_year[df$Date==max(df$Date[df$pass_fail=="P" & df$CharNameShort==char & df$SiteName==site], na.rm=T)])))
   
-  # print(df$month_year[df$CharNameShort==char &
-  #                       df$Date==max(df$Date[df$pass_fail=="P"], na.rm=T) &
-  #                       df$SiteName==site])
-  
-  # if(nrow(df[df$pass_fail=="P" & df$CharNameShort==char,])!=0) {
-  #   print(max(df$sample_year[df$pass_fail=="P" & df$SiteName==site & df$CharNameShort==char], na.rm=T))
-  # } else {""}
-  
 }
 
 ##testing function
 find_last_pass(wq_data_total, mysite, "Total phosphorus")
-
-# print(wq_data_total$month_year[wq_data_total$CharNameShort=="Total phosphorus" &
-#                         wq_data_total$Date==max(wq_data_total$Date[wq_data_total$pass_fail=="P"], na.rm=T) &
-#                         wq_data_total$SiteName==mysite])
-# 
-# wq_data_total$month_year[wq_data_total$Date==max(wq_data_total$Date[wq_data_total$pass_fail=="P" & wq_data_total$CharNameShort=="Total nitrogen" & wq_data_total$SiteName==mysite])]
-# 
-# max(wq_data_total$Date[wq_data_total$pass_fail=="P" & wq_data_total$CharNameShort=="Total nitrogen" & wq_data_total$SiteName==mysite], na.rm=T)
 
 
 ##function to find first year recorded
@@ -362,13 +331,38 @@ find_first_year <- function(df, site, char) {
 find_first_year(wq_data_merged, mysite, "ANC")
 
 
-##function to show increase or decrease in % pass
+# ##function to show increase or decrease in % pass
+# increase_decrease <- function(df, char) {
+#   
+#   if(df$percent_pass.x[df$CharNameShort==char]>df$percent_pass.y[df$CharNameShort==char]) {
+#     print("increased")
+#   } else if (df$percent_pass.x[df$CharNameShort==char]<df$percent_pass.y[df$CharNameShort==char]) {
+#     print("decreased")
+#   } else if (df$percent_pass.x[df$CharNameShort==char]==df$percent_pass.y[df$CharNameShort==char]) {
+#     print("remained the same")
+#   } 
+#   
+# }
+# 
+# ##testing function
+# increase_decrease(table, "Total phosphorus")
+
+
+##function to show increase/decrease in % pass and magnitude of change 
 increase_decrease <- function(df, char) {
   
-  if(df$percent_pass.x[df$CharNameShort==char]>df$percent_pass.y[df$CharNameShort==char]) {
+  if(df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] >= 25) {
+    print("increased considerably")
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 25 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] >= 10) {
     print("increased")
-  } else if (df$percent_pass.x[df$CharNameShort==char]<df$percent_pass.y[df$CharNameShort==char]) {
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 10 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > 0) {
+    print("increased slightly")
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 0 | df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -10) {
+    print("decreased slightly")
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] <= -10 | df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -25) {
     print("decreased")
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < -25) {
+    print("decreased considerably")
   } else if (df$percent_pass.x[df$CharNameShort==char]==df$percent_pass.y[df$CharNameShort==char]) {
     print("remained the same")
   } 
@@ -377,6 +371,26 @@ increase_decrease <- function(df, char) {
 
 ##testing function
 increase_decrease(table, "Total phosphorus")
+
+
+pH_df <- wq_data_total[wq_data_total$CharacteristicName=="pH" & wq_data_total$pass_fail=="F",]
+
+##function to show directionality of pH exceedances
+ph_ex <- function(df, site) {
+  
+  if(nrow(df[df$pH_exceed=="acidic" & df$SiteName==site,]) > 0.5*(nrow(df[(df$pH_exceed=="acidic" | df$pH_exceed=="basic") & df$SiteName==site,])) & nrow(df[(df$pH_exceed=="acidic" | df$pH_exceed=="basic") & df$SiteName==site,]) > 0.5*(nrow(df[df$SiteName==site,]))) {
+    paste("Most pH exceedances at", mysite, "are acidic (lower than 6).", sep=" ")
+  } else if(nrow(df[df$pH_exceed=="basic" & df$SiteName==site,]) > 0.5*(nrow(df[(df$pH_exceed=="acidic" | df$pH_exceed=="basic") & df$SiteName==site,])) & nrow(df[(df$pH_exceed=="acidic" | df$pH_exceed=="basic") & df$SiteName==site,]) > 0.5*(nrow(df[df$SiteName==site,]))) {
+    paste("Most pH exceedances at", mysite, "are basic (greater than 9).", sep=" ") 
+  } else {
+      print("")
+    }
+  
+}
+
+ph_ex(pH_df, mysite)
+  
+      
 
 
 ##statements:
@@ -396,9 +410,9 @@ text <- function(df, site, char) {
   text1 <- paste(my_char, "measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
   text2 <- paste("The last", table$CharNameLower[table$CharNameShort==my_char], "exceedance at", mysite, "was recorded in", find_last_ex(wq_data_total, mysite, my_char), sep=" ")
   text3 <- paste(my_char, "measurements at", mysite, "have never met the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
-  text4 <- paste("The last acceptable", table$CharNameLower[table$CharNameShort==my_char], "measurement at", mysite, "was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
+  text4 <- paste("Most", char, "measurements at", mysite, "have exceeded the acceptable threshold.", "The last acceptable", table$CharNameLower[table$CharNameShort==my_char], "measurement at", mysite, "was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
   text5 <- paste("percentage of passing", table$CharNameLower[table$CharNameShort==my_char], "measurements", increase_decrease(table, my_char), "compared to the last five years.", sep=" ")
-  text6 <- paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" ")
+  # text6 <- paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" ")
   ##need to automate 2019 for this text
   
   ##conditions for each text option
@@ -407,7 +421,7 @@ text <- function(df, site, char) {
     my_text <- paste(text1, ".", sep="")
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>2018], na.rm=T)==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
-    my_text <- paste(text6, ".", sep="")
+    my_text <- paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" ")
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==2024], na.rm=T)==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
     my_text <- paste(text2, ".", sep="")
@@ -416,19 +430,22 @@ text <- function(df, site, char) {
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==2024], na.rm=T)==0 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=0) {
     my_text <- paste(text4, ".", sep="")
-  } else if (increase_decrease(table, my_char)=="decreased") {
+  } else if (increase_decrease(table, my_char)=="decreased considerably" | increase_decrease(table, my_char)=="decreased" | increase_decrease(table, my_char)=="decreased slightly") {
     my_text <- paste("The", text5, sep=" ")
-  } else if (increase_decrease(table, my_char)=="increased") {
+  } else if (increase_decrease(table, my_char)=="increased considerably" | increase_decrease(table, my_char)=="increased" | increase_decrease(table, my_char)=="increased slightly") {
     my_text <- paste("Although", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "exceeded the acceptable threshold in 2024, the", text5, sep=" ")
   }
   ##need to automate year in last option
+  else {
+    my_text <- print("test")
+  }
   
   return(my_text)
     
 }
 
 ##testing function
-text(wq_data_total, mysite, "pH")
+text(wq_data_total, mysite, "Total phosphorus")
 
 ```
 
@@ -465,12 +482,12 @@ bar_graph
 \large \textbf{pH} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="pH",])`}}    
 \normalsize \textbf{Acceptable range:} `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="pH"]`    
 \textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$max[park_data_24$CharacteristicName=="pH"]`  
-`r text(wq_data2, mysite, "pH")`  
+`r text(wq_data2, mysite, "pH")` `r ph_ex(pH_df, mysite)`  
   
-\large \textbf{Salinity} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Salinity",])`}}    
-\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
-\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Salinity"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Salinity"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Salinity"]`  
-`r text(wq_data2, mysite, "Salinity")`  
+\large \textbf{Specific Conductance} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Specific conductance",])`}}    
+\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Specific conductance"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Specific conductance"]`  
+\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Specific conductance"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Specific conductance"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Specific conductance"]`  
+`r text(wq_data2, mysite, "Specific conductance")`  
   
 \large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
@@ -478,9 +495,9 @@ bar_graph
 `r text(wq_data2, mysite, "Total nitrogen")`  
 
 <!--print images-->
-```{r, echo=F, fig.show='hold', out.width="80%", fig.ncol=2, fig.align="right"}
+```{r, echo=F, fig.show='hold', out.width="85%", fig.ncol=2, fig.align="right"}
  
-site_map
+#site_map
 site_image
 
 # fig.cap=paste(mysite, "is a", unique(park_data_24$cold_water), "water", unique(park_data_24$karst), "stream.", sep=" ")
@@ -490,7 +507,7 @@ site_image
 \begin{flushright}
 \small `r mysite` is a `r unique(park_data_24$cold_water)`water `r unique(park_data_24$karst)` stream.
 \end{flushright}
- 
+\vspace{30pt}
 \large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 \textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
@@ -502,4 +519,4 @@ site_image
 `r text(wq_data2, mysite, "Water temperature")`  
 \vspace{12pt}  
 \Large \textbf{Water Quality Monitoring in the NCR}   
-\normalsize Data on additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids, are available in the [NCRN water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
+\normalsize The National Capital Region Inventory & Monitoring Network (NCRN I&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
