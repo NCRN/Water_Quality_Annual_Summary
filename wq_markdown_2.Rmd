@@ -389,8 +389,31 @@ ph_ex <- function(df, site) {
 }
 
 ph_ex(pH_df, mysite)
+
+
+##function for majority passing/failing
+major_P_F <- function(df, site, char) {
+  ##later replace 2024 with params$year
+  if(mean(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharNameShort==char], na.rm=T)>50) {
+    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements in 2024 were acceptable.")
+  } else if(mean(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharNameShort==char], na.rm=T)<50) {
+    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements in 2024 were not acceptable.")
+  } else if(mean(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharNameShort==char], na.rm=T)==50) {
+    paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements in 2024 were acceptable.")
+  }
+  # if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
+  #   paste("acceptable.")
+  # } else if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
+  #   paste("not acceptable.")
+  # } else if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
+  #   paste("not acceptable.")
+  # }
   
-      
+}
+
+##testing function
+major_P_F(wq_data_total, mysite, "Total nitrogen")
+
 
 
 ##statements:
@@ -407,11 +430,11 @@ text <- function(df, site, char) {
   assign("my_char", char, envir=.GlobalEnv)
   
   ##text options
-  text1 <- paste(my_char, "measurements at", mysite, "have not exceeded the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
+  text1 <- paste(my_char, "is healthy at", paste(mysite, ".", sep=""), "Measurements have not exceeded the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
   text2 <- paste("The last", table$CharNameLower[table$CharNameShort==my_char], "exceedance at", mysite, "was recorded in", find_last_ex(wq_data_total, mysite, my_char), sep=" ")
-  text3 <- paste(my_char, "measurements at", mysite, "have never met the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
+  text3 <- paste(my_char, "at", mysite, "is insufficient.", my_char, "measurements have never met the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
   text4 <- paste("Most", char, "measurements at", mysite, "have exceeded the acceptable threshold.", "The last acceptable", table$CharNameLower[table$CharNameShort==my_char], "measurement at", mysite, "was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
-  text5 <- paste("percentage of passing", table$CharNameLower[table$CharNameShort==my_char], "measurements", increase_decrease(table, my_char), "compared to the last five years.", sep=" ")
+  text5 <- paste(major_P_F(df, mysite, my_char), "The percentage of passing measurements at", mysite, increase_decrease(table, my_char), "compared to the last five years.", sep=" ")
   # text6 <- paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" ")
   ##need to automate 2019 for this text
   
@@ -431,9 +454,9 @@ text <- function(df, site, char) {
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=0) {
     my_text <- paste(text4, ".", sep="")
   } else if (increase_decrease(table, my_char)=="decreased considerably" | increase_decrease(table, my_char)=="decreased" | increase_decrease(table, my_char)=="decreased slightly") {
-    my_text <- paste("The", text5, sep=" ")
+    my_text <- paste(text5)
   } else if (increase_decrease(table, my_char)=="increased considerably" | increase_decrease(table, my_char)=="increased" | increase_decrease(table, my_char)=="increased slightly") {
-    my_text <- paste("Although", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "exceeded the acceptable threshold in 2024, the", text5, sep=" ")
+    my_text <- paste(text5)
   }
   ##need to automate year in last option
   else {
@@ -445,7 +468,7 @@ text <- function(df, site, char) {
 }
 
 ##testing function
-text(wq_data_total, mysite, "Total phosphorus")
+text(wq_data_total, mysite, "pH")
 
 ```
 
@@ -507,7 +530,7 @@ site_image
 \begin{flushright}
 \small `r mysite` is a `r unique(park_data_24$cold_water)`water `r unique(park_data_24$karst)` stream.
 \end{flushright}
-\vspace{30pt}
+\vspace{28pt}
 \large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 \textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
