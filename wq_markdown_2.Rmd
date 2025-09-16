@@ -450,7 +450,7 @@ text <- function(df, site, char) {
   text1 <- paste(my_char, "is healthy at", paste(mysite, ".", sep=""), "Measurements have not exceeded the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
   text2 <- paste("The last", table$CharNameLower[table$CharNameShort==my_char], "exceedance at", mysite, "was recorded in", find_last_ex(wq_data_total, mysite, my_char), sep=" ")
   text3 <- paste(my_char, "at", mysite, "is insufficient.", my_char, "measurements have never met the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
-  text4 <- paste("Most", char, "measurements at", mysite, "have exceeded the acceptable threshold.", "The last acceptable", table$CharNameLower[table$CharNameShort==my_char], "measurement at", mysite, "was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
+  text4 <- paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "have exceeded the acceptable threshold.", "The last acceptable", table$CharNameLower[table$CharNameShort==my_char], "measurement at", mysite, "was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
   text5 <- paste(major_P_F(df, mysite, my_char), "The percentage of passing measurements at", mysite, increase_decrease(table, my_char), "compared to the last five years.", sep=" ")
   # text6 <- paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" ")
   ##need to automate 2019 for this text
@@ -460,7 +460,7 @@ text <- function(df, site, char) {
     my_text <- paste(text1, ".", sep="")
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
-    my_text <- paste(paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" "), ".", sep="")
+    my_text <- paste(paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "are acceptable.", text2, sep=" "), ".", sep="")
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
     my_text <- paste(text2, ".", sep="")
