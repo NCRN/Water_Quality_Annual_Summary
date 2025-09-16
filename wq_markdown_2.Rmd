@@ -3,6 +3,7 @@ output:
   pdf_document:
     latex_engine: xelatex
     fig_caption: yes
+fontsize: 11pt
 urlcolor: blue
 classoption: twocolumn
 mainfont: Arial
@@ -53,6 +54,15 @@ park <- metadata %>%
 mypark <- unique(park$LongName)
 mysite <- unique(park$SiteName)
 
+
+myyear <- params$Year
+
+# myyear <- "2024"
+
+start_year <- (as.numeric(myyear))-5
+end_year <- (as.numeric(myyear))-1
+five_yr_range <- paste(as.character(start_year), as.character(end_year), sep="–")
+
 ```
 
 ---
@@ -61,7 +71,7 @@ title: |
   | `r mypark`: `r mysite`
 ---
 
-```{r, include=F}
+```{r creating data frame, include=F}
 thresholds <- metadata %>%
   dplyr::select(SiteCodeWQX, DataName, LowerPoint, UpperPoint)
 
@@ -149,13 +159,16 @@ colnames(wq_data_total) <- c("Date", "Park", "Site", "SiteName","karst",
                         "LowerPoint","UpperPoint", "pass_fail", "percent_pass", "pH_exceed")
 
 wq_data2 <- wq_data_total %>%
-  dplyr::filter(sample_year>2018)
+  # dplyr::filter(sample_year>2018)
+  dplyr::filter(sample_year>=start_year)
+
+#myyear <- max(wq_data2$sample_year)
 
 ```
 
 
 ```{r park wq data, include=F}
-##filtering data frame by parameters
+##filtering data frame by parameters 
 park_data <- wq_data2 %>%
   dplyr::filter(Park==params$Park, Site==params$Site)
 
@@ -166,8 +179,9 @@ park_data <- wq_data2 %>%
 #   dplyr::filter(Park=="HAFE", Site=="FLSP")
 
 ##2024 data
-park_data_24 <- park_data %>%
-  dplyr::filter(sample_year==2024) %>%
+park_data_current <- park_data %>%
+  # dplyr::filter(sample_year==2024) %>%
+  dplyr::filter(sample_year==myyear) %>%
   dplyr::group_by(Site, CharacteristicName) %>%
   ##calculating percent pass
   dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
@@ -183,16 +197,17 @@ park_data_24 <- park_data %>%
   dplyr::summarize() 
 
 ##function to remove duplicate rows for parameters with both passing and failing values 
-for(i in unique(park_data_24$CharacteristicName)) {
-  if(nrow(park_data_24[park_data_24$CharacteristicName==i,])==2) {
-    park_data_24 <- park_data_24[!(park_data_24$CharacteristicName==i &
-                                     park_data_24$pass_fail=="P"),]
-  } else{park_data_24 <- park_data_24}
+for(i in unique(park_data_current$CharacteristicName)) {
+  if(nrow(park_data_current[park_data_current$CharacteristicName==i,])==2) {
+    park_data_current <- park_data_current[!(park_data_current$CharacteristicName==i &
+                                     park_data_current$pass_fail=="P"),]
+  } else{park_data_current <- park_data_current}
 }
 
 ##2019-23 data
-park_data_19_23 <- park_data %>%
-  dplyr::filter(sample_year!=2024) %>%
+park_data_past <- park_data %>%
+  # dplyr::filter(sample_year!=2024) %>%
+  dplyr::filter(sample_year!=myyear) %>%
   dplyr::group_by(Site, CharacteristicName) %>%
   dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
   dplyr::group_by(Site, CharacteristicName, percent_pass) %>%
@@ -203,7 +218,7 @@ park_data_19_23 <- park_data %>%
 <!--setting up data frame for table and figures-->
 ```{r table df, include=F}
 ##merging 2024 and 2019-23 data frames 
-table <- merge(park_data_24, park_data_19_23, by="CharacteristicName")
+table <- merge(park_data_current, park_data_past, by="CharacteristicName")
 
 ##creating data frame for table
 table <- table %>%
@@ -216,8 +231,8 @@ table <- table %>%
 table2 <- table %>%
   dplyr::select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
   tidyr::pivot_longer(!(CharacteristicName), names_to="years", values_to="percent_pass") %>%
-  dplyr::mutate(years=case_when(years=="percent_pass.x"~"2024",
-                         years=="percent_pass.y"~"2019–23")) %>%
+  dplyr::mutate(years=case_when(years=="percent_pass.x"~myyear,
+                         years=="percent_pass.y"~five_yr_range)) %>%
   dplyr::mutate(colors=case_when(percent_pass==100~"black",
                           percent_pass!=100~"#E32636")) %>%
   dplyr::mutate(x_pos=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~1,
@@ -231,19 +246,19 @@ table2 <- table %>%
 
 colnames(table2) = c("Parameter", "x_pos", "years", "percent_pass", "colors")
 
-colors_list <- table2 %>%
-  dplyr::group_by(Parameter, colors, years) %>%
-  dplyr::summarize() 
-
-colors_list <- colors_list[!colors_list$years=="2019–23",]
-
-colors_list$Parameter=c("Acid neutralizing capacity", "Dissolved oxygen",
-                        "Salinity", "Water temperature", "Total nitrogen",
-                        "Total phosphorus", "PH")
-
-colors_list <- colors_list[order(colors_list$Parameter),]
-
-colors_list <- print(colors_list$colors)
+# colors_list <- table2 %>%
+#   dplyr::group_by(Parameter, colors, years) %>%
+#   dplyr::summarize() 
+# 
+# colors_list <- colors_list[!colors_list$years=="2019–23",]
+# 
+# colors_list$Parameter=c("Acid neutralizing capacity", "Dissolved oxygen",
+#                         "Salinity", "Water temperature", "Total nitrogen",
+#                         "Total phosphorus", "PH")
+# 
+# colors_list <- colors_list[order(colors_list$Parameter),]
+# 
+# colors_list <- print(colors_list$colors)
 
 ```
 
@@ -288,11 +303,11 @@ site_image <- knitr::include_graphics(file_path)
 
 <!--site map-->
 ```{r site map, echo=F}
- map_path <- paste("maps/", fig_name, "_map2.png", sep="")
+# map_path <- paste("maps/", fig_name, "_map2.png", sep="")
 
 # knitr::include_graphics(map_path)
 
-site_map <- knitr::include_graphics(map_path)
+# site_map <- knitr::include_graphics(map_path)
 
 ```
 
@@ -394,12 +409,12 @@ ph_ex(pH_df, mysite)
 ##function for majority passing/failing
 major_P_F <- function(df, site, char) {
   ##later replace 2024 with params$year
-  if(mean(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharNameShort==char], na.rm=T)>50) {
-    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements in 2024 were acceptable.")
-  } else if(mean(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharNameShort==char], na.rm=T)<50) {
-    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements in 2024 were not acceptable.")
-  } else if(mean(df$percent_pass[df$sample_year==2024 & df$SiteName==site & df$CharNameShort==char], na.rm=T)==50) {
-    paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements in 2024 were acceptable.")
+  if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)>50) {
+    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements in", myyear, "were acceptable.", sep=" ")
+  } else if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)<50) {
+    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements in", myyear, "were not acceptable.", sep=" ")
+  } else if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)==50) {
+    paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements in", myyear, "were acceptable.", sep=" ")
   }
   # if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
   #   paste("acceptable.")
@@ -442,15 +457,15 @@ text <- function(df, site, char) {
   ##do unique percent_pass instead of mean
   if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)==100) {
     my_text <- paste(text1, ".", sep="")
-  } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>2018], na.rm=T)==100 &
+  } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
     my_text <- paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" ")
-  } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==2024], na.rm=T)==100 &
+  } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
     my_text <- paste(text2, ".", sep="")
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)==0) {
     my_text <- paste(text3, ".", sep="")
-  } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==2024], na.rm=T)==0 &
+  } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==0 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=0) {
     my_text <- paste(text4, ".", sep="")
   } else if (increase_decrease(table, my_char)=="decreased considerably" | increase_decrease(table, my_char)=="decreased" | increase_decrease(table, my_char)=="decreased slightly") {
@@ -492,54 +507,59 @@ bar_graph
 
 ```
 
-\large \textbf{Acid Neutralizing Capacity (ANC)} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}       
-\normalsize \textbf{Acceptable values:} Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
-\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
+\large \textbf{Acid Neutralizing Capacity (ANC)} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}       
+\normalsize \textbf{Acceptable values:} Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
+\textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
 `r text(wq_data2, mysite, "ANC")`  
-   
-\large \textbf{Dissolved Oxygen (DO)} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Dissolved oxygen (DO)",])`}}    
-\normalsize \textbf{Acceptable values:} Above `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]`  
-\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Dissolved oxygen (DO)"]`   
+\vspace{2pt}   
+\large \textbf{Dissolved Oxygen (DO)} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Dissolved oxygen (DO)",])`}}    
+\normalsize \textbf{Acceptable values:} Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]`  
+\textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]`   
 `r text(wq_data2, mysite, "DO")`  
-  
-\large \textbf{pH} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="pH",])`}}    
-\normalsize \textbf{Acceptable range:} `r park_data_24$LowerPoint[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="pH"]`    
-\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="pH"]` – `r park_data_24$max[park_data_24$CharacteristicName=="pH"]`  
+\vspace{2pt}   
+\large \textbf{pH} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="pH",])`}}    
+\normalsize \textbf{Acceptable range:} `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="pH"]` – `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="pH"]`    
+\textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="pH"]` – `r park_data_current$max[park_data_current$CharacteristicName=="pH"]`  
 `r text(wq_data2, mysite, "pH")` `r ph_ex(pH_df, mysite)`  
-  
-\large \textbf{Specific Conductance} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Specific conductance",])`}}    
-\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Specific conductance"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Specific conductance"]`  
-\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Specific conductance"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Specific conductance"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Specific conductance"]`  
+\vspace{2pt}   
+\large \textbf{Specific Conductance} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Specific conductance",])`}}    
+\normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
+\textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Specific conductance"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
 `r text(wq_data2, mysite, "Specific conductance")`  
   
-\large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
-\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
-\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Nitrogen, mixed forms"]`  
-`r text(wq_data2, mysite, "Total nitrogen")`  
 
 <!--print images-->
-```{r, echo=F, fig.show='hold', out.width="85%", fig.ncol=2, fig.align="right"}
+```{r, echo=F, fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" "), out.width="85%", fig.align="right"}
  
 #site_map
 site_image
 
 # fig.cap=paste(mysite, "is a", unique(park_data_24$cold_water), "water", unique(park_data_24$karst), "stream.", sep=" ")
 
+##fig.show='hold', 
+
 ```
+<!-- 
 \vspace{-2em}
 \begin{flushright}
-\small `r mysite` is a `r unique(park_data_24$cold_water)`water `r unique(park_data_24$karst)` stream.
+\small `r mysite` is a `r unique(park_data_current$cold_water)`water `r unique(park_data_current$karst)` stream.
 \end{flushright}
 \vspace{28pt}
-\large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
-\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
-\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Total Phosphorus, mixed forms"]`  
+-->
+\large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
+\normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
+\textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
+`r text(wq_data2, mysite, "Total nitrogen")`   
+\vspace{2pt}    
+\large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
+\normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
+\textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 `r text(wq_data2, mysite, "Total phosphorus")`  
-\vspace{8pt}   
-\large \textbf{Water Temperature} \textbf{\textcolor{red}{`r icon(park_data_24[park_data_24$CharacteristicName=="Temperature, water",])`}}    
-\normalsize \textbf{Acceptable values:} Below `r park_data_24$UpperPoint[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`  
-\textbf{2024 range:} `r park_data_24$min[park_data_24$CharacteristicName=="Temperature, water"]` – `r park_data_24$max[park_data_24$CharacteristicName=="Temperature, water"]` `r park_data_24$unit[park_data_24$CharacteristicName=="Temperature, water"]`   
+\vspace{2pt}    
+\large \textbf{Water Temperature} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Temperature, water",])`}}    
+\normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`  
+\textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Temperature, water"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`   
 `r text(wq_data2, mysite, "Water temperature")`  
-\vspace{12pt}  
+\vspace{2pt}   
 \Large \textbf{Water Quality Monitoring in the NCR}   
 \normalsize The National Capital Region Inventory & Monitoring Network (NCRN I&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
