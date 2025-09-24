@@ -2,25 +2,27 @@
 output:
   pdf_document:
     latex_engine: xelatex
-    fig_caption: yes
+    #fig_caption: false
+    extra_dependencies: ["multicol"]
 fontsize: 11pt
-urlcolor: blue
-classoption: twocolumn
+urlcolor: RoyalBlue
+#classoption: twocolumn
 mainfont: Arial
 header-includes:
 - \pagenumbering{gobble}
 - \setlength{\columnsep}{2em}
-geometry: margin=1cm
+geometry: margin=1.5cm
 always_allow_html: true
 params:
-  Park: "NACE"
-  Site: "OXRU"
+  Park: "HAFE"
+  Site: "FLSP"
   Year: "2024"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(eval.after = "fig.cap")
+#knitr::opts_knit$set(eval.after = "fig.cap")
+#knitr::opts_chunk$set(fig.lp = " ")
 
 ```
 
@@ -68,7 +70,7 @@ five_yr_range <- paste(as.character(start_year), as.character(end_year), sep="�
 
 ---
 title: |
-  | \vspace{-1em} **`r params$Year` Water Quality Annual Summary** 
+  | \vspace{-1em} **`r params$Year` Water Quality Summary** 
   | `r mypark`: `r mysite` \vspace{-1em}
 ---
 
@@ -284,9 +286,9 @@ bar_graph <- ggplot() +
         axis.title.y=element_blank(),
         legend.text=element_text(size=11),
         legend.title=element_blank(),
-        legend.position=c(0.10, -0.30),
+        legend.position=c(0.095, -0.30),
         legend.direction="horizontal",
-        plot.margin = unit(c(0.2,0.2,0.6,0), "cm"))
+        plot.margin = unit(c(0,0.2,0.6,0), "cm"))
 
 #bar_graph
 
@@ -412,11 +414,14 @@ ph_ex(pH_df, mysite)
 ##function for majority passing/failing
 major_P_F <- function(df, site, char) {
   if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)>50) {
-    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements in", myyear, "were acceptable.", sep=" ")
+    # paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "in", myyear, "were acceptable.", sep=" ")
+    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements were acceptable at", mysite, "in", myyear, sep=" ")
   } else if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)<50) {
-    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements in", myyear, "were not acceptable.", sep=" ")
+    # paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "in", myyear, "were not acceptable.", sep=" ")
+    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements were not acceptable at", mysite, "in", myyear, sep=" ")
   } else if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)==50) {
-    paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements in", myyear, "were acceptable.", sep=" ")
+    # paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "in", myyear, "were acceptable.", sep=" ")
+    paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements were acceptable at", mysite, "in", myyear, sep=" ")
   }
   # if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
   #   paste("acceptable.")
@@ -447,20 +452,28 @@ text <- function(df, site, char) {
   assign("my_char", char, envir=.GlobalEnv)
   
   ##text options
-  text1 <- paste(my_char, "is healthy at", paste(mysite, ".", sep=""), "Measurements have not exceeded the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
-  text2 <- paste("The last", table$CharNameLower[table$CharNameShort==my_char], "exceedance at", mysite, "was recorded in", find_last_ex(wq_data_total, mysite, my_char), sep=" ")
-  text3 <- paste(my_char, "at", mysite, "is insufficient.", my_char, "measurements have never met the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
-  text4 <- paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "have exceeded the acceptable threshold.", "The last acceptable", table$CharNameLower[table$CharNameShort==my_char], "measurement at", mysite, "was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
-  text5 <- paste(major_P_F(df, mysite, my_char), "The percentage of passing measurements at", mysite, increase_decrease(table, my_char), "compared to the last five years.", sep=" ")
+  # text1 <- paste(my_char, "is healthy at", paste(mysite, ".", sep=""), "Measurements have fallen within the acceptable range since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
+  text1 <- paste("All", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "were passing in", myyear, "and the five years prior.", sep=" ")
+  text2 <- paste("The last", table$CharNameLower[table$CharNameShort==my_char], "exceedance was recorded in", find_last_ex(wq_data_total, mysite, my_char), sep=" ")
+  # text3 <- paste(my_char, "at", mysite, "is insufficient.", my_char, "measurements have never met the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
+  text3 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior.", sep=" ")
+  # text4 <- paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "have exceeded the acceptable threshold.", "The last passing", table$CharNameLower[table$CharNameShort==my_char], "measurement was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
+  # text4 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior. The last passing", table$CharNameLower[table$CharNameShort==my_char], "measurement was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
+  text4 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior", sep=" ")
+  text5 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
   # text6 <- paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" ")
   ##need to automate 2019 for this text
   
   ##conditions for each text option
   if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)==100) {
-    my_text <- paste(text1, ".", sep="")
+    # my_text <- paste(text1, ".", sep="")
+    my_text <- text1
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
-    my_text <- paste(paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "are acceptable.", text2, sep=" "), ".", sep="")
+    ##change to say all in the last 5 years
+    # my_text <- paste(paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "were passing.", text2, sep=" "), ".", sep="")
+    # my_text <- paste(paste(text1, text2, sep=" "), ".", sep="")
+    my_text <- text1
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
     my_text <- paste(text2, ".", sep="")
@@ -495,18 +508,24 @@ icon <- function(df) {
 
   if (df$pass_fail=="F") {
     #"!"
-    knitr::asis_output("\U2666")
+    #knitr::asis_output("\U2666") 
+    knitr::asis_output("\U25B2")
     } else{" "} 
 
 }
 
 ```
 
-\large \textbf{Percent of Passing Measurements}
-\vspace{-1.5pt}
+
+\begin{multicols}{2} 
+
+\large \textbf{Percent of Measurements Passing}
+\vspace{-10pt}
 <!--print figure-->
-```{r print figure, echo=F, out.width="120%", fig.pos="h"}
+```{r print figure, echo=F, out.width="120%", fig.align="left"}
 bar_graph
+
+##fig.pos="h"
 
 ```
 
@@ -529,26 +548,35 @@ bar_graph
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Specific conductance"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
 `r text(wq_data_total, mysite, "Specific conductance")`  
-  
+<!-- \vspace{5pt}   -->
 
+
+\begin{flushright}
+\small `r mysite` is a `r unique(park_data_current$cold_water)`water `r unique(park_data_current$karst)` stream.
+\end{flushright}
 <!--print images-->
-```{r, echo=F, fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" "), out.width="85%", fig.align="right"}
+```{r, echo=F, out.width="85%", fig.align="right"}
  
 #site_map
-#site_image
+site_image
 
 # fig.cap=paste(mysite, "is a", unique(park_data_24$cold_water), "water", unique(park_data_24$karst), "stream.", sep=" ")
+
+#fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" ")
 
 ##fig.show='hold', 
 
 ```
-<!-- 
-\vspace{-2em}
+<!-- `r paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" ")` -->
+
+<!-- \vspace{-2em}
 \begin{flushright}
 \small `r mysite` is a `r unique(park_data_current$cold_water)`water `r unique(park_data_current$karst)` stream.
 \end{flushright}
-\vspace{28pt}
--->
+\vspace{28pt} -->
+
+<!--\vspace{30pt}-->
+
 <!--
 \begin{flushright}
 \begin{minipage}[t]{0.4\textwidth} 
@@ -564,30 +592,47 @@ bar_graph
 \end{minipage}
 \end{flushright}
 -->
+<!--\vspace{5pt}  -->
 
+
+
+\columnbreak
+
+
+<!-- \vfill\eject -->
 
 \large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
-`r text(wq_data_total, mysite, "Total nitrogen")`   
-\vspace{2pt}    
+`r text(wq_data_total, mysite, "Total nitrogen")`  
+\vspace{-1pt}  
 \large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
-`r text(wq_data_total, mysite, "Total phosphorus")` 
-\vspace{2pt}    
+`r text(wq_data_total, mysite, "Total phosphorus")`  
+\vspace{-1pt}  
 \large \textbf{Water Temperature} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Temperature, water",])`}}    
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Temperature, water"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`   
 `r text(wq_data_total, mysite, "Water temperature")`  
 \vspace{2pt}   
 \Large \textbf{Water Quality Monitoring in the NCR}   
-\normalsize The National Capital Region Inventory & Monitoring Network (NCRN I&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
-
-```{r, echo=F, fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" "), out.width="100%", fig.align="right"}
+\normalsize The National Capital Region Inventory \& Monitoring Network (NCRN I\&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I\&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I\&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
+<!--
+\vspace{-1pt}
+```{r, echo=F, out.width="50%", fig.align="right"}
  
 #site_map
 site_image
 
+#fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" "),
+
+##paste(`r mysite`, "is a", `r unique(park_data_current$cold_water)`, "water", `r unique(park_data_current$karst)`, "stream.", sep=" ")
+
 ```
+\vspace{-2pt}
+`r paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" ")`
+-->
+
+\end{multicols}
 
