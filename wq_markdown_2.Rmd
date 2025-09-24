@@ -3,10 +3,10 @@ output:
   pdf_document:
     latex_engine: xelatex
     #fig_caption: false
-    extra_dependencies: ["multicol"]
+    #extra_dependencies: ["multicol"]
 fontsize: 11pt
 urlcolor: RoyalBlue
-#classoption: twocolumn
+classoption: twocolumn
 mainfont: Arial
 header-includes:
 - \pagenumbering{gobble}
@@ -14,8 +14,8 @@ header-includes:
 geometry: margin=1.5cm
 always_allow_html: true
 params:
-  Park: "HAFE"
-  Site: "FLSP"
+  Park: "NACE"
+  Site: "OXRU"
   Year: "2024"
 ---
 
@@ -70,7 +70,7 @@ five_yr_range <- paste(as.character(start_year), as.character(end_year), sep="�
 
 ---
 title: |
-  | \vspace{-1em} **`r params$Year` Water Quality Summary** 
+  | \vspace{-2em} **`r params$Year` Water Quality Summary** 
   | `r mypark`: `r mysite` \vspace{-1em}
 ---
 
@@ -317,7 +317,8 @@ site_image <- knitr::include_graphics(file_path)
 ```
 
 <!--automating text-->
-```{r text functions, echo=F, include=F, warning=F}
+<!--last exceedance/last pass/first record functions-->
+```{r functions, echo=F, include=F, warning=F}
 ##function to find last exceedance
 find_last_ex <- function(df, site, char) {
   
@@ -350,24 +351,10 @@ find_first_year <- function(df, site, char) {
 ##testing function
 find_first_year(wq_data_merged, mysite, "ANC")
 
+```
 
-# ##function to show increase or decrease in % pass
-# increase_decrease <- function(df, char) {
-#   
-#   if(df$percent_pass.x[df$CharNameShort==char]>df$percent_pass.y[df$CharNameShort==char]) {
-#     print("increased")
-#   } else if (df$percent_pass.x[df$CharNameShort==char]<df$percent_pass.y[df$CharNameShort==char]) {
-#     print("decreased")
-#   } else if (df$percent_pass.x[df$CharNameShort==char]==df$percent_pass.y[df$CharNameShort==char]) {
-#     print("remained the same")
-#   } 
-#   
-# }
-# 
-# ##testing function
-# increase_decrease(table, "Total phosphorus")
-
-
+<!--increasing/decreasing % passing function-->
+```{r increase decrease, echo=F, include=F, warning=F}
 ##function to show increase/decrease in % pass and magnitude of change 
 increase_decrease <- function(df, char) {
   
@@ -392,7 +379,11 @@ increase_decrease <- function(df, char) {
 ##testing function
 increase_decrease(table, "Total phosphorus")
 
+```
 
+<!--pH exceedance function-->
+```{r pH exceed, echo=F, include=F, warning=F}
+##creating dataframe with only pH exceedances
 pH_df <- wq_data_total[wq_data_total$CharacteristicName=="pH" & wq_data_total$pass_fail=="F",]
 
 ##function to show directionality of pH exceedances
@@ -408,9 +399,13 @@ ph_ex <- function(df, site) {
   
 }
 
+##testing function
 ph_ex(pH_df, mysite)
 
+```
 
+<!--majority pass/fail function-->
+```{r PF, echo=F, include=F, warning=F}
 ##function for majority passing/failing
 major_P_F <- function(df, site, char) {
   if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)>50) {
@@ -436,8 +431,10 @@ major_P_F <- function(df, site, char) {
 ##testing function
 major_P_F(wq_data_total, mysite, "Total nitrogen")
 
+```
 
-
+<!--text printing function-->
+```{r text automation, echo=F, include=F, warning=F}
 ##statements:
 ##if 100% pass always (percent_pass==100): text1
 ##if 100% pass in 2024, but not previously ((percent_pass==100 & year==2024) & mean(percent_pass)!=100): text2
@@ -516,11 +513,9 @@ icon <- function(df) {
 
 ```
 
-
-\begin{multicols}{2} 
-
 \large \textbf{Percent of Measurements Passing}
-\vspace{-10pt}
+
+\vspace{-4.5mm}
 <!--print figure-->
 ```{r print figure, echo=F, out.width="120%", fig.align="left"}
 bar_graph
@@ -528,7 +523,8 @@ bar_graph
 ##fig.pos="h"
 
 ```
-
+  
+\vspace{-3mm}
 \large \textbf{Acid Neutralizing Capacity (ANC)} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}       
 \normalsize \textbf{Acceptable values:} Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
@@ -548,13 +544,15 @@ bar_graph
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Specific conductance"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
 `r text(wq_data_total, mysite, "Specific conductance")`  
-<!-- \vspace{5pt}   -->
+
+
+\vspace{50pt}   
 
 
 \begin{flushright}
 \small `r mysite` is a `r unique(park_data_current$cold_water)`water `r unique(park_data_current$karst)` stream.
 \end{flushright}
-<!--print images-->
+<!--print site image-->
 ```{r, echo=F, out.width="85%", fig.align="right"}
  
 #site_map
@@ -567,39 +565,10 @@ site_image
 ##fig.show='hold', 
 
 ```
-<!-- `r paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" ")` -->
-
-<!-- \vspace{-2em}
-\begin{flushright}
-\small `r mysite` is a `r unique(park_data_current$cold_water)`water `r unique(park_data_current$karst)` stream.
-\end{flushright}
-\vspace{28pt} -->
-
-<!--\vspace{30pt}-->
-
-<!--
-\begin{flushright}
-\begin{minipage}[t]{0.4\textwidth} 
-\large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
-\normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
-\textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
-`r text(wq_data_total, mysite, "Total nitrogen")`   
-\vspace{1em}    
-\large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
-\normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
-\textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
-`r text(wq_data_total, mysite, "Total phosphorus")` 
-\end{minipage}
-\end{flushright}
--->
-<!--\vspace{5pt}  -->
 
 
+\vspace{40pt}
 
-\columnbreak
-
-
-<!-- \vfill\eject -->
 
 \large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
@@ -617,7 +586,9 @@ site_image
 `r text(wq_data_total, mysite, "Water temperature")`  
 \vspace{2pt}   
 \Large \textbf{Water Quality Monitoring in the NCR}   
-\normalsize The National Capital Region Inventory \& Monitoring Network (NCRN I\&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I\&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I\&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
+\normalsize The National Capital Region Inventory & Monitoring Network (NCRN I&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I\&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
+
+
 <!--
 \vspace{-1pt}
 ```{r, echo=F, out.width="50%", fig.align="right"}
@@ -633,6 +604,4 @@ site_image
 \vspace{-2pt}
 `r paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" ")`
 -->
-
-\end{multicols}
 
