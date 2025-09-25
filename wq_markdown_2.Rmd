@@ -458,37 +458,20 @@ text <- function(df, site, char) {
   assign("my_char", char, envir=.GlobalEnv)
   
   ##text options
-  # text1 <- paste(my_char, "is healthy at", paste(mysite, ".", sep=""), "Measurements have fallen within the acceptable range since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
   text1 <- paste("All", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "were passing in", myyear, "and the five years prior.", sep=" ")
-  # text2 <- paste("The last", table$CharNameLower[table$CharNameShort==my_char], "exceedance was recorded in", find_last_ex(wq_data_total, mysite, my_char), sep=" ")
   text2 <- paste("All", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "were passing in", myyear, sep=" ")
-  # text3 <- paste(my_char, "at", mysite, "is insufficient.", my_char, "measurements have never met the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ") 
   text3 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior.", sep=" ")
-  # text4 <- paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "have exceeded the acceptable threshold.", "The last passing", table$CharNameLower[table$CharNameShort==my_char], "measurement was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
-  # text4 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior. The last passing", table$CharNameLower[table$CharNameShort==my_char], "measurement was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
-  # text4 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior", sep=" ")
   text4 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, sep=" ")
   text5 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
-  # text6 <- paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" ")
   text6 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "as the five years prior.", sep=" " )
   text7 <- paste("The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
   
   ##conditions for each text option
-  # if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)==100) {
   if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==100) {
-    # my_text <- paste(text1, ".", sep="")
     my_text <- text1
-  # } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==100 &
-  #            mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
-    ##change to say all in the last 5 years
-    # my_text <- paste(paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "were passing.", text2, sep=" "), ".", sep="")
-    # my_text <- paste(paste(text1, text2, sep=" "), ".", sep="")
-    # my_text <- text1
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=100) {
-    # my_text <- paste(text2, ".", sep="")
     my_text <- paste(paste(text2, ".", sep=""), text7, sep=" ")
-  # } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)==0) {
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==0) {
     my_text <- text3
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==0 &
@@ -512,13 +495,6 @@ text <- function(df, site, char) {
 
 ##testing function
 text(wq_data_total, mysite, "pH")
-
-##previous statements:
-##if 100% pass always (percent_pass==100): text1
-##if 100% pass in 2024, but not previously ((percent_pass==100 & year==2024) & mean(percent_pass)!=100): text2
-##if parameter has never passed (percent_pass==0): text3
-##if parameter previously passed, but not in 2024 (mean(percent_pass)!=0 & (percent_pass==0 & sample_year==2024)): text4
-##otherwise (percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & year==2024)): text5
 
 ```
 
@@ -608,7 +584,7 @@ site_image
 `r text(wq_data_total, mysite, "Water temperature")`  
 \vspace{2pt}   
 \Large \textbf{Water Quality Monitoring in the NCR}   
-\normalsize The National Capital Region Inventory & Monitoring Network (NCRN I&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I\&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
+\normalsize This report summarizes water quality data from `r start_year` to `r myyear` for seven parameters. The National Capital Region Inventory & Monitoring Network (NCRN I&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I\&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
 
 
 <!--
@@ -626,3 +602,77 @@ site_image
 \vspace{-2pt}
 `r paste(mysite, "is a", unique(park_data_current$cold_water), unique(park_data_current$karst), "stream.", sep=" ")`
 -->
+
+<!--old text printing function-->
+```{r old text function, echo=F, include=F, warning=F}
+##statements:
+##if 100% pass in current year and 5 years prior: text1
+##if 0% pass in current year and 5 years prior: text3
+##if 100% pass in current year but not before: text 2 + text 7
+##if 0% pass in current year but not before: text 4 + text 7
+##if neither 0 or 100% pass in current year and changed from 5 years prior: text5
+##if neither 0 or 100% pass in current year and same value as 5 years prior: text 6
+
+##creating function to paste text
+#text <- function(df, site, char) {
+  
+  ##creating characteristic variable
+  #assign("my_char", char, envir=.GlobalEnv)
+  
+  ##text options
+  # text1 <- paste(my_char, "is healthy at", paste(mysite, ".", sep=""), "Measurements have fallen within the acceptable range since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ")
+  # text2 <- paste("The last", table$CharNameLower[table$CharNameShort==my_char], "exceedance was recorded in", find_last_ex(wq_data_total, mysite, my_char), sep=" ")
+  # text3 <- paste(my_char, "at", mysite, "is insufficient.", my_char, "measurements have never met the acceptable threshold since monitoring began in", find_first_year(wq_data_merged, mysite, my_char), sep=" ")
+  # text4 <- paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "have exceeded the acceptable threshold.", "The last passing", table$CharNameLower[table$CharNameShort==my_char], "measurement was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
+  # text5 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
+  # text6 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "as the five years prior.", sep=" " )
+  # text7 <- paste("The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
+  
+  ##conditions for each text option
+  # if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)==100) {
+    # my_text <- paste(text1, ".", sep="")
+  # } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==100 &
+  #            mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
+    # my_text <- paste(paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "were passing.", text2, sep=" "), ".", sep="")
+  # } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==100 &
+  #            mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=100) {
+    # my_text <- paste(text2, ".", sep="")
+  # } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)==0) {
+  # } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)==0) {
+  #   my_text <- text3
+  # } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==0 &
+    #          mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char], na.rm=T)!=0) {
+    # my_text <- paste(text4, ".", sep="")
+  # } else if (increase_decrease(table, my_char)=="decreased considerably" | increase_decrease(table, my_char)=="decreased" | increase_decrease(table, my_char)=="decreased slightly") {
+  #   my_text <- text5
+  # } else if (increase_decrease(table, my_char)=="increased considerably" | increase_decrease(table, my_char)=="increased" | increase_decrease(table, my_char)=="increased slightly") {
+  #   my_text <- text5
+#   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=100 &
+#              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=0 &
+#              increase_decrease(table, my_char)=="remained the same") {
+#     my_text <- text6
+#   }else {
+#     my_text <- print("test")
+#   }
+#   
+#   return(my_text)
+#     
+# }
+
+##testing function
+# text(wq_data_total, mysite, "pH")
+
+##previous statements:
+##if 100% pass always (percent_pass==100): text1
+##if 100% pass in 2024, but not previously ((percent_pass==100 & year==2024) & mean(percent_pass)!=100): text2
+##if parameter has never passed (percent_pass==0): text3
+##if parameter previously passed, but not in 2024 (mean(percent_pass)!=0 & (percent_pass==0 & sample_year==2024)): text4
+##otherwise (percent_pass!=0 & percent_pass!=100 & !(percent_pass==100 & year==2024)): text5
+
+##previous text4 and 6 options
+  # text4 <- paste("Most", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "have exceeded the acceptable threshold.", "The last passing", table$CharNameLower[table$CharNameShort==my_char], "measurement was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
+  # text4 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior. The last passing", table$CharNameLower[table$CharNameShort==my_char], "measurement was recorded in", find_last_pass(wq_data_total, mysite, my_char), sep=" ")
+  # text4 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior", sep=" ")
+# text6 <- paste("Most", my_char, "measurements at", mysite, "are acceptable.", text2, sep=" ")
+
+```
