@@ -20,4 +20,6 @@ RenderSummary<-function(Code, File, Year){
                                                 Year=Year), output_file = File)
 }
 
-pwalk(list(c(codes, OutFiles, Year)), .f=RenderSummary)
+# pwalk(list(c(codes, OutFiles, Year)), .f=RenderSummary)
+
+walk2(.x=codes, .y=OutFiles, .f=RenderSummary, Year=Year)
