@@ -14,8 +14,8 @@ header-includes:
 geometry: margin=1.5cm
 always_allow_html: true
 params:
-  Park: "NACE"
-  Site: "OXRU"
+  Park: "PRWI"
+  Site: "MBBR"
   Year: "2024"
 ---
 
@@ -516,7 +516,7 @@ icon <- function(df) {
 ```
 
 \large \textbf{Percent of Measurements Passing}
-<!--\vspace{-1.5em}-->
+\vspace{-1.5em}
 <!--print figure-->
 ```{r print figure, echo=F, out.width="120%", fig.align="left"}
 bar_graph
@@ -525,7 +525,7 @@ bar_graph
 
 ```
   
-<!--\vspace{-1em}-->
+\vspace{-1em}
 \large \textbf{Acid Neutralizing Capacity (ANC)} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}       
 \normalsize \textbf{Acceptable values:} Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
@@ -547,14 +547,15 @@ bar_graph
 `r text(wq_data_total, mysite, "Specific conductance")`  
 
 
-\vspace{50pt}   
+<!--\vspace{50pt}-->   
+\vspace{70pt}  
 
 
 \begin{flushright}
 \small `r mysite` is a `r unique(park_data_current$cold_water)` `r unique(park_data_current$karst)` stream.
 \end{flushright}
 
-<!--\vspace{-2em}-->
+\vspace{-2em}
 <!--print site image-->
 ```{r, echo=F, out.width="85%", fig.align="right"}
  
@@ -569,7 +570,7 @@ site_image
 
 ```
 
-<!--\vspace{2.8em}-->
+\vspace{2.8em}
 \large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  

@@ -15,7 +15,9 @@ codes <- list(unique(metadata$code))
 OutFiles<-paste0(codes,"-",Year,"-","summary.pdf")
 
 RenderSummary<-function(Code, File, Year){ 
-  render(input="wq_markdown_2.Rmd", params=list(Park=strsplit(Code, "_")[[1]][1], Site=strsplit(Code, "_")[[1]][2], Year=Year), output_file = File)
+  render(input="wq_markdown_2.Rmd", params=list(Park=strsplit(Code, "_")[[1]][1], 
+                                                Site=strsplit(Code, "_")[[1]][2], 
+                                                Year=Year), output_file = File)
 }
 
 pwalk(list(c(codes, OutFiles, Year)), .f=RenderSummary)
