@@ -154,10 +154,10 @@ wq_data_total <- wq_data_merged %>%
                                                         ResultMeasure.MeasureUnitCode=="ueq/L"~"\u00B5eq/L",
                                                         ResultMeasure.MeasureUnitCode=="uS/cm"~"\u00B5S/cm",
                                                         TRUE~ResultMeasure.MeasureUnitCode)) %>%
-  ##converting column to character to fix pH upper point
-  dplyr::mutate(UpperPoint=as.character(UpperPoint)) %>%
-  dplyr::mutate(UpperPoint=case_when(CharacteristicName=="pH"~"9",
-                              CharacteristicName!="pH"~UpperPoint)) %>%
+  # ##converting column to character to fix pH upper point
+  # dplyr::mutate(UpperPoint=as.character(UpperPoint)) %>%
+  # dplyr::mutate(UpperPoint=case_when(CharacteristicName=="pH"~"9",
+  #                             CharacteristicName!="pH"~UpperPoint)) %>%
   ##selecting columns
   dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, CharNameShort, CharNameLower, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, sample_month, sample_my, LowerPoint, UpperPoint, pass_fail) %>%
   ##calculating percent pass
@@ -198,8 +198,8 @@ park_data <- wq_data2 %>%
 park_data_current <- park_data %>%
   dplyr::filter(sample_year==myyear) %>%
   ##calculating percent pass
-  dplyr::group_by(Site, CharacteristicName) %>%
-  dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
+  # dplyr::group_by(Site, CharacteristicName) %>%
+  # dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
   ##adding minimum and maximum value columns
   dplyr::mutate(min=min(ResultMeasureValue),
          max=max(ResultMeasureValue)) %>%
@@ -364,9 +364,9 @@ increase_decrease <- function(df, char) {
     print("increased")
   } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 10 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > 0) {
     print("increased slightly")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 0 | df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -10) {
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 0 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -10) {
     print("decreased slightly")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] <= -10 | df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -25) {
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] <= -10 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -25) {
     print("decreased")
   } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < -25) {
     print("decreased considerably")
@@ -477,10 +477,12 @@ text <- function(df, site, char) {
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==0 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=0) {
     my_text <- paste(paste(text4, ".", sep=""), text7, sep=" ")
-  } else if (increase_decrease(table, my_char)=="decreased considerably" | increase_decrease(table, my_char)=="decreased" | increase_decrease(table, my_char)=="decreased slightly") {
-    my_text <- text5
-  } else if (increase_decrease(table, my_char)=="increased considerably" | increase_decrease(table, my_char)=="increased" | increase_decrease(table, my_char)=="increased slightly") {
-    my_text <- text5
+  # } else if (increase_decrease(table, my_char)=="decreased considerably" | increase_decrease(table, my_char)=="decreased" | increase_decrease(table, my_char)=="decreased slightly") {
+  #   my_text <- text5
+  # } else if (increase_decrease(table, my_char)=="increased considerably" | increase_decrease(table, my_char)=="increased" | increase_decrease(table, my_char)=="increased slightly") {
+  #   my_text <- text5
+  } else if (increase_decrease(table, my_char) %in% c("decreased considerably", "decreased", "decreased slightly", "increased considerably", "increased", "increased slightly")) {
+    my_text<-text5
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=0 &
              increase_decrease(table, my_char)=="remained the same") {
