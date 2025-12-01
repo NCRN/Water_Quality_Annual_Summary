@@ -21,16 +21,3 @@ RenderSummary<-function(Code, File, Year){
 }
 
 pwalk(list(c(codes, OutFiles, Year)), .f=RenderSummary)
-
-# walk2(.x=codes, .y=OutFiles, Year=Year, .f=RenderSummary)
-
-
-#ParksCodes<-c("ANTI","CATO", "GWMP","HAFE","MANA","MONO","NACE","PRWI","ROCR","WOTR")
-
-#SitesCodes <- c()
-
-# RenderIAR<-function(Park, Site, Year, File){ 
-#   render(input='wq_markdown_2.Rmd',params=list(Park=Park, Site=Site, Year=Year), output_file = File)
-# }
-
-#walk2(.x=codes, .y=OutFiles, .f=RenderIAR, Year=Year)
