@@ -14,8 +14,8 @@ header-includes:
 geometry: margin=1.5cm
 always_allow_html: true
 params:
-  Park: "PRWI"
-  Site: "MBBR"
+  Park: "ROCR"
+  Site: "ROC3"
   Year: "2024"
 ---
 
@@ -42,7 +42,10 @@ library(ggplot2)
 ```{r meta data, include=F}
 metadata <- read.csv("wqp_ncrnwater_metadata.csv")
 metadata <- metadata %>%
-  tidyr::separate(SiteCode, c("Network", "Park", "Site"))
+  tidyr::separate(SiteCode, c("Network", "Park", "Site")) %>%
+  ##changing Rock Creek at Dumbarton Oaks to Downstream of Dumbarton Oaks
+  dplyr::mutate(SiteName=case_when(SiteName=="Rock Creek at Dumbarton Oaks"~"Rock Creek Downstream of Dumbarton Oaks",
+                               TRUE~SiteName))
 
 ##filtering for park/site
 park <- metadata %>%
@@ -120,6 +123,9 @@ wq_data_merged <- wq_data_merged %>%
                                    "Total Phosphorus, mixed forms",
                                    "pH", "Dissolved oxygen (DO)",
                                    "Specific conductance", "Temperature, water")) %>%
+  ##changing battery kemble run to creek
+  dplyr::mutate(MonitoringLocationName=case_when(MonitoringLocationName=="Battery Kemble Run"~"Battery Kemble Creek",
+                                                 TRUE~MonitoringLocationName)) %>%
   ##creating column with shortened parameter names for report
   dplyr::mutate(CharNameShort=case_when(CharacteristicName=="Acid Neutralizing Capacity (ANC)"~"ANC",
                                              CharacteristicName=="Dissolved oxygen (DO)"~"DO",
@@ -247,7 +253,7 @@ table2 <- table %>%
   ##putting current and previous % pass in the same column
   tidyr::pivot_longer(!(CharacteristicName), names_to="years", values_to="percent_pass") %>%
   ##changing year names
-  dplyr::mutate(years=case_when(years=="percent_pass.x"~myyear,
+  dplyr::mutate(years=case_when(years=="percent_pass.x"~as.character(myyear),
                          years=="percent_pass.y"~five_yr_range)) %>%
   dplyr::mutate(colors=case_when(percent_pass==100~"black",
                           percent_pass!=100~"#E32636")) %>%
@@ -327,7 +333,7 @@ find_last_ex <- function(df, site, char) {
 }
 
 ##testing function 
-find_last_ex(wq_data_total, mysite, "Water temperature")
+find_last_ex(wq_data_total, mysite, "Total phosphorus")
 
 
 ##function to find last passing measurement

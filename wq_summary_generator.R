@@ -10,7 +10,9 @@ metadata <- metadata %>%
   tidyr::separate(SiteCode, c("Network", "Park", "Site")) %>%
   dplyr::mutate(code=paste(Park, Site, sep="_"))
 
-codes <- list(unique(metadata$code))
+codes <- unique(metadata$code)
+
+# codes <- codes[35:37]
 
 OutFiles<-paste0(codes,"-",Year,"-","summary.pdf")
 
