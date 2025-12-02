@@ -68,7 +68,7 @@ myyear <- params$Year
 
 start_year <- (as.numeric(myyear))-5
 end_year <- (as.numeric(myyear))-1
-five_yr_range <- paste(as.character(start_year), as.character(end_year), sep="–")
+five_yr_range <- paste(as.character(start_year), as.character(end_year), sep="\U2013")
 
 ```
 

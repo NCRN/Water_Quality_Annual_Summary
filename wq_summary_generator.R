@@ -12,9 +12,9 @@ metadata <- metadata %>%
 
 codes <- unique(metadata$code)
 
-# codes <- codes[35:37]
+codes <- codes[35:37]
 
-OutFiles<-paste0(codes,"-",Year,"-","summary.pdf")
+OutFiles<-paste0(codes,"_",Year,"_","summary.pdf")
 
 RenderSummary<-function(Code, File, Year){ 
   render(input="wq_markdown_2.Rmd", params=list(Park=strsplit(Code, "_")[[1]][1], 
