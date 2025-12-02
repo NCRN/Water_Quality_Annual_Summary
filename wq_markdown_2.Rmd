@@ -160,10 +160,6 @@ wq_data_total <- wq_data_merged %>%
                                                         ResultMeasure.MeasureUnitCode=="ueq/L"~"\u00B5eq/L",
                                                         ResultMeasure.MeasureUnitCode=="uS/cm"~"\u00B5S/cm",
                                                         TRUE~ResultMeasure.MeasureUnitCode)) %>%
-  # ##converting column to character to fix pH upper point
-  # dplyr::mutate(UpperPoint=as.character(UpperPoint)) %>%
-  # dplyr::mutate(UpperPoint=case_when(CharacteristicName=="pH"~"9",
-  #                             CharacteristicName!="pH"~UpperPoint)) %>%
   ##selecting columns
   dplyr::select(ActivityStartDate, Park, Site, MonitoringLocationName, karst, nutrient_ecoregion, cold_water, CharacteristicName, CharNameShort, CharNameLower, ResultMeasureValue, ResultMeasure.MeasureUnitCode, sample_year, sample_month, sample_my, LowerPoint, UpperPoint, pass_fail) %>%
   ##calculating percent pass
@@ -203,9 +199,6 @@ park_data <- wq_data2 %>%
 ## creating data frame for current data
 park_data_current <- park_data %>%
   dplyr::filter(sample_year==myyear) %>%
-  ##calculating percent pass
-  # dplyr::group_by(Site, CharacteristicName) %>%
-  # dplyr::mutate(percent_pass=(sum(pass_fail=="P")/sum(pass_fail=="P" | pass_fail=="F"))*100) %>%
   ##adding minimum and maximum value columns
   dplyr::mutate(min=min(ResultMeasureValue),
          max=max(ResultMeasureValue)) %>%
@@ -214,16 +207,17 @@ park_data_current <- park_data %>%
          max=round(max, digits=2)) %>%
   dplyr::group_by(Site, cold_water, karst, nutrient_ecoregion, CharacteristicName,
                   CharNameShort, CharNameLower, unit, LowerPoint, UpperPoint, min,
-                  max, pass_fail, percent_pass) %>%
+                  max, percent_pass) %>%
   dplyr::summarize() 
 
 ##function to remove duplicate rows for parameters with both passing and failing values 
-for(i in unique(park_data_current$CharacteristicName)) {
-  if(nrow(park_data_current[park_data_current$CharacteristicName==i,])==2) {
-    park_data_current <- park_data_current[!(park_data_current$CharacteristicName==i &
-                                     park_data_current$pass_fail=="P"),]
-  } else{park_data_current <- park_data_current}
-}
+# for(i in unique(park_data_current$CharacteristicName)) {
+#   if(nrow(park_data_current[park_data_current$CharacteristicName==i,])==2) {
+#     park_data_current <- park_data_current[!(park_data_current$CharacteristicName==i &
+#                                      park_data_current$pass_fail=="P"),]
+#   } else{park_data_current <- park_data_current}
+# }
+park_data_current$pass_fail <- ifelse(park_data_current$percent_pass==100, "P", "F") 
 
 ##creating data frame for data from last 5 years
 park_data_past <- park_data %>%
@@ -249,9 +243,9 @@ table <- table %>%
   dplyr::mutate(percent_pass.y=round(percent_pass.y, digits=0)) 
 
 table2 <- table %>%
-  dplyr::select(CharacteristicName, percent_pass.x, percent_pass.y) %>%
+  dplyr::select(CharacteristicName, CharNameShort, CharNameLower, percent_pass.x, percent_pass.y) %>%
   ##putting current and previous % pass in the same column
-  tidyr::pivot_longer(!(CharacteristicName), names_to="years", values_to="percent_pass") %>%
+  tidyr::pivot_longer(!(CharacteristicName | CharNameShort | CharNameLower), names_to="years", values_to="percent_pass") %>%
   ##changing year names
   dplyr::mutate(years=case_when(years=="percent_pass.x"~as.character(myyear),
                          years=="percent_pass.y"~five_yr_range)) %>%
@@ -265,9 +259,12 @@ table2 <- table %>%
                          CharacteristicName=="Total Nitrogen, mixed forms"~5,
                          CharacteristicName=="Total Phosphorus, mixed forms"~6,
                          CharacteristicName=="Temperature, water"~7)) %>%
-  dplyr::select(CharacteristicName, x_pos, years, percent_pass, colors)
+  dplyr::select(CharacteristicName, CharNameShort, CharNameLower, x_pos, years, percent_pass, colors) %>%
+  dplyr::mutate(major_P_F=case_when(percent_pass>50~paste("The majority of", CharNameLower, "measurements were acceptable at", mysite, "in", myyear, sep=" "),
+                                    percent_pass<50~paste("The majority of", CharNameLower, "measurements were not acceptable at", mysite, "in", myyear, sep=" "),
+                                    percent_pass==50~paste("Half of", CharNameLower, "measurements were acceptable at", mysite, "in", myyear, sep=" ")))
 
-colnames(table2) = c("Parameter", "x_pos", "years", "percent_pass", "colors")
+colnames(table2) = c("Parameter", "CharNameShort", "CharNameLower", "x_pos", "years", "percent_pass", "colors", "major_P_F")
 
 ```
 
@@ -390,7 +387,7 @@ increase_decrease(table, "Total phosphorus")
 <!--pH exceedance function-->
 ```{r pH exceed, echo=F, include=F, warning=F}
 ##creating dataframe with only pH exceedances
-pH_df <- wq_data_total[wq_data_total$CharacteristicName=="pH" & wq_data_total$pass_fail=="F",]
+pH_df <- wq_data_total[wq_data_total$CharacteristicName=="pH" & wq_data_total$pass_fail=="F" & wq_data_total$sample_year>2018,]
 
 ##function to show directionality of pH exceedances
 ph_ex <- function(df, site) {
@@ -418,32 +415,34 @@ ph_ex(pH_df, mysite)
 
 ```
 
-<!--majority pass/fail function-->
+<!--majority pass/fail function (no longer used)-->
 ```{r PF, echo=F, include=F, warning=F}
 ##function for majority passing/failing
-major_P_F <- function(df, site, char) {
-  if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)>50) {
-    # paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "in", myyear, "were acceptable.", sep=" ")
-    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements were acceptable at", mysite, "in", myyear, sep=" ")
-  } else if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)<50) {
-    # paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "in", myyear, "were not acceptable.", sep=" ")
-    paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements were not acceptable at", mysite, "in", myyear, sep=" ")
-  } else if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)==50) {
-    # paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "in", myyear, "were acceptable.", sep=" ")
-    paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements were acceptable at", mysite, "in", myyear, sep=" ")
-  }
-  # if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
-  #   paste("acceptable.")
-  # } else if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
-  #   paste("not acceptable.")
-  # } else if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
-  #   paste("not acceptable.")
-  # }
-  
-}
-
-##testing function
-major_P_F(wq_data_total, mysite, "Total nitrogen")
+# major_P_F <- function(df, site, char) {
+#   if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)>50) {
+#     # paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "in", myyear, "were acceptable.", sep=" ")
+#     paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements were acceptable at", mysite, "in", myyear, sep=" ")
+#   } else if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)<50) {
+#     # paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "in", myyear, "were not acceptable.", sep=" ")
+#     paste("The majority of", table$CharNameLower[table$CharNameShort==char], "measurements were not acceptable at", mysite, "in", myyear, sep=" ")
+#   } else if(mean(df$percent_pass[df$sample_year==as.numeric(myyear) & df$SiteName==site & df$CharNameShort==char], na.rm=T)==50) {
+#     # paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "in", myyear, "were acceptable.", sep=" ")
+#     paste("Half of", table$CharNameLower[table$CharNameShort==char], "measurements were acceptable at", mysite, "in", myyear, sep=" ")
+#   }
+#   
+#   ##old
+#   # if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
+#   #   paste("acceptable.")
+#   # } else if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
+#   #   paste("not acceptable.")
+#   # } else if(nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="P",]) > nrow(df[df$SiteName==site & df$sample_year==2024 & df$CharNameShort==char & df$pass_fail=="F",]) ) {
+#   #   paste("not acceptable.")
+#   # }
+#   
+# }
+# 
+# ##testing function
+# major_P_F(wq_data_total, mysite, "Total nitrogen")
 
 ```
 
@@ -458,19 +457,70 @@ major_P_F(wq_data_total, mysite, "Total nitrogen")
 ##if neither 0 or 100% pass in current year and same value as 5 years prior: text 6
 
 ##creating function to paste text
+# text <- function(df, site, char) {
+#   
+#   ##creating characteristic variable
+#   assign("my_char", char, envir=.GlobalEnv)
+#   
+#   ##text options
+#   text1 <- paste("All", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "were passing in", myyear, "and the five years prior.", sep=" ")
+#   text2 <- paste("All", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "were passing in", myyear, sep=" ")
+#   text3 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior.", sep=" ")
+#   text4 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, sep=" ")
+#   # text5 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
+#   # text6 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "as the five years prior.", sep=" " )
+#   text5 <- paste(paste(table2$major_P_F[table2$CharNameShort==char & table2$years==myyear], ".", sep=""),"The percentage of passing measurements",  
+#                  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
+#   text6 <- paste(paste(table2$major_P_F[table2$CharNameShort==char & table2$years==myyear], ".", sep=""),"The percentage of passing measurements",  
+#                  increase_decrease(table, my_char), "as the five years prior.", sep=" " )
+#   text7 <- paste("The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
+#   
+#   ##conditions for each text option
+#   if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==100) {
+#     my_text <- text1
+#   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==100 &
+#              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=100) {
+#     my_text <- paste(paste(text2, ".", sep=""), text7, sep=" ")
+#   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==0) {
+#     my_text <- text3
+#   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==0 &
+#              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=0) {
+#     my_text <- paste(paste(text4, ".", sep=""), text7, sep=" ")
+#   } else if (increase_decrease(table, my_char) %in% c("decreased considerably", "decreased", "decreased slightly", "increased considerably", "increased", "increased slightly")) {
+#     my_text<-text5
+#   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=100 &
+#              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=0 &
+#              increase_decrease(table, my_char)=="remained the same") {
+#     my_text <- text6
+#   }else {
+#     my_text <- print("test")
+#   }
+#   
+#   return(my_text)
+#     
+# }
+# 
+# ##testing function
+# text(wq_data_total, mysite, "pH")
+
+
+
+
+
 text <- function(df, site, char) {
   
-  ##creating characteristic variable
-  assign("my_char", char, envir=.GlobalEnv)
-  
   ##text options
-  text1 <- paste("All", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "were passing in", myyear, "and the five years prior.", sep=" ")
-  text2 <- paste("All", table$CharNameLower[table$CharNameShort==my_char], "measurements at", mysite, "were passing in", myyear, sep=" ")
+  text1 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "were passing in", myyear, "and the five years prior.", sep=" ")
+  text2 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "were passing in", myyear, sep=" ")
   text3 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior.", sep=" ")
   text4 <- paste("All", table$CharNameLower[table$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, sep=" ")
-  text5 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
-  text6 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "as the five years prior.", sep=" " )
-  text7 <- paste("The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
+  # text5 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "compared to the five years prior.", sep=" ")
+  # text6 <- paste(paste(major_P_F(df, mysite, my_char), ".", sep=""),"The percentage of passing measurements",  increase_decrease(table, my_char), "as the five years prior.", sep=" " )
+  text5 <- paste(paste(table2$major_P_F[table2$CharNameShort==char & table2$years==myyear], ".", sep=""),"The percentage of passing measurements",  
+                 increase_decrease(table, char), "compared to the five years prior.", sep=" ")
+  text6 <- paste(paste(table2$major_P_F[table2$CharNameShort==char & table2$years==myyear], ".", sep=""),"The percentage of passing measurements",  
+                 increase_decrease(table, char), "as the five years prior.", sep=" " )
+  text7 <- paste("The percentage of passing measurements",  increase_decrease(table, char), "compared to the five years prior.", sep=" ")
   
   ##conditions for each text option
   if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==100) {
@@ -483,15 +533,11 @@ text <- function(df, site, char) {
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==0 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=0) {
     my_text <- paste(paste(text4, ".", sep=""), text7, sep=" ")
-  # } else if (increase_decrease(table, my_char)=="decreased considerably" | increase_decrease(table, my_char)=="decreased" | increase_decrease(table, my_char)=="decreased slightly") {
-  #   my_text <- text5
-  # } else if (increase_decrease(table, my_char)=="increased considerably" | increase_decrease(table, my_char)=="increased" | increase_decrease(table, my_char)=="increased slightly") {
-  #   my_text <- text5
-  } else if (increase_decrease(table, my_char) %in% c("decreased considerably", "decreased", "decreased slightly", "increased considerably", "increased", "increased slightly")) {
+  } else if (increase_decrease(table, char) %in% c("decreased considerably", "decreased", "decreased slightly", "increased considerably", "increased", "increased slightly")) {
     my_text<-text5
   } else if (mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=100 &
              mean(df$percent_pass[df$SiteName==site & df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=0 &
-             increase_decrease(table, my_char)=="remained the same") {
+             increase_decrease(table, char)=="remained the same") {
     my_text <- text6
   }else {
     my_text <- print("test")
@@ -501,8 +547,8 @@ text <- function(df, site, char) {
     
 }
 
-##testing function
-text(wq_data_total, mysite, "pH")
+# text(wq_data_total, mysite, "Total nitrogen")
+
 
 ```
 
