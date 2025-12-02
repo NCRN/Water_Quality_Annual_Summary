@@ -14,8 +14,8 @@ header-includes:
 geometry: margin=1.5cm
 always_allow_html: true
 params:
-  Park: "ROCR"
-  Site: "ROC3"
+  Park: "NACE"
+  Site: "OXRU"
   Year: "2024"
 ---
 
@@ -598,16 +598,11 @@ bar_graph
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Specific conductance"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
 `r text(wq_data_total, mysite, "Specific conductance")`  
 
+<!--column break-->
+\vfill\eject
+  
+$$\\[-1.55em]$$  
 
-<!--\vspace{50pt}-->   
-\vspace{70pt}  
-
-
-\begin{flushright}
-\small `r mysite` is a `r unique(park_data_current$cold_water)` `r unique(park_data_current$karst)` stream.
-\end{flushright}
-
-\vspace{-2em}
 <!--print site image-->
 ```{r, echo=F, out.width="85%", fig.align="right"}
  
@@ -621,8 +616,15 @@ site_image
 ##fig.show='hold', 
 
 ```
+\vspace{-1.5em}
+\begin{flushright}
+\begin{minipage}{0.85\columnwidth}
+\small `r mysite` is a `r unique(park_data_current$cold_water)` `r unique(park_data_current$karst)` stream.
+\end{minipage}
+\end{flushright}
 
-\vspace{2.8em}
+$$\\[-2.85em]$$
+
 \large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
