@@ -14,8 +14,8 @@ header-includes:
 geometry: margin=1.5cm
 always_allow_html: true
 params:
-  Park: "NACE"
-  Site: "OXRU"
+  Park: "WOTR"
+  Site: "CHCK"
   Year: "2024"
 ---
 
@@ -75,8 +75,8 @@ five_yr_range <- paste(as.character(start_year), as.character(end_year), sep="\U
 
 ---
 title: |
-  | \vspace{-2em} **`r params$Year` Water Quality Summary** 
-  | `r mypark`: `r mysite` \vspace{-1em}
+  | \vspace{-2em} \huge \textbf{`r params$Year` Water Quality Summary} 
+  | \LARGE `r mypark`: `r mysite` \vspace{-1em}
 ---
 
 
@@ -567,7 +567,7 @@ icon <- function(df) {
 
 ```
 
-\large \textbf{Percent of Measurements Passing}
+\Large \textbf{Percent of Measurements Passing}
 \vspace{-1.5em}
 <!--print figure-->
 ```{r print figure, echo=F, out.width="120%", fig.align="left"}
@@ -578,22 +578,22 @@ bar_graph
 ```
   
 \vspace{-1em}
-\large \textbf{Acid Neutralizing Capacity (ANC)} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}       
+\Large \textbf{Acid Neutralizing Capacity (ANC)} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`}}       
 \normalsize \textbf{Acceptable values:} Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
 `r text(wq_data_total, mysite, "ANC")`  
 \vspace{1pt}   
-\large \textbf{Dissolved Oxygen (DO)} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Dissolved oxygen (DO)",])`}}    
+\Large \textbf{Dissolved Oxygen (DO)} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Dissolved oxygen (DO)",])`}}    
 \normalsize \textbf{Acceptable values:} Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]`   
 `r text(wq_data_total, mysite, "DO")`  
 \vspace{1pt}   
-\large \textbf{pH} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="pH",])`}}    
+\Large \textbf{pH} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="pH",])`}}    
 \normalsize \textbf{Acceptable range:} `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="pH"]` – `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="pH"]`    
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="pH"]` – `r park_data_current$max[park_data_current$CharacteristicName=="pH"]`  
 `r text(wq_data_total, mysite, "pH")` `r ph_ex(pH_df, mysite)`  
 \vspace{1pt}   
-\large \textbf{Specific Conductance} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Specific conductance",])`}}    
+\Large \textbf{Specific Conductance} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Specific conductance",])`}}    
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Specific conductance"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
 `r text(wq_data_total, mysite, "Specific conductance")`  
@@ -604,7 +604,7 @@ bar_graph
 $$\\[-1.55em]$$  
 
 <!--print site image-->
-```{r, echo=F, out.width="85%", fig.align="right"}
+```{r, echo=F, out.width="85%", fig.align="right", fig.alt = "test"}
  
 #site_map
 site_image
@@ -625,22 +625,22 @@ site_image
 
 $$\\[-2.85em]$$
 
-\large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
+\Large \textbf{Total Nitrogen} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 `r text(wq_data_total, mysite, "Total nitrogen")`  
 \vspace{-1pt}  
-\large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
+\Large \textbf{Total Phosphorus} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms",])`}}   
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 `r text(wq_data_total, mysite, "Total phosphorus")`  
 \vspace{-1pt}  
-\large \textbf{Water Temperature} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Temperature, water",])`}}    
+\Large \textbf{Water Temperature} \textbf{\textcolor{red}{`r icon(park_data_current[park_data_current$CharacteristicName=="Temperature, water",])`}}    
 \normalsize \textbf{Acceptable values:} Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`  
 \textbf{`r myyear` range:} `r park_data_current$min[park_data_current$CharacteristicName=="Temperature, water"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`   
-`r text(wq_data_total, mysite, "Water temperature")`  
+`r text(wq_data_total, mysite, "Water temperature")`    
 \vspace{2pt}   
-\Large \textbf{Water Quality Monitoring in the NCR}   
+\Large \textbf{Water Quality Monitoring in the NCR}  
 \normalsize This report summarizes water quality data from `r start_year` to `r myyear` for seven parameters. The National Capital Region Inventory & Monitoring Network (NCRN I&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I\&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more.
 
 
