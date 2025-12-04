@@ -59,7 +59,8 @@ five_yr_range <- paste(as.character(start_year), as.character(end_year), sep="\U
 title: `r params$Year` Water Quality Summary
 subtitle: "`r mypark`: `r mysite`"
 --- 
-
+  
+    
 ```{r wq data, include=F}
 ##creating data frame with exceedance thresholds
 thresholds <- park %>%
@@ -398,11 +399,6 @@ write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long
 
 ```
 
-  
-:::::::::::::: {.columns}
-
-<!-- COLUMN 1 -->
-::: {.column width="47.5%"}
 
 ```{r create figure, echo=F, warning=F}
 ##creating bar graph
@@ -432,12 +428,57 @@ bar_graph <- ggplot() +
 
 ```
 
-```{r print figure, echo=F, out.width="140%", fig.align="left"}
-bar_graph
+```{r print figure, echo=F, out.width="55%", fig.align="left"}
+# bar_graph
 
 ##fig.pos="h"
 
 ```
+
+
+```{r setting up site photo, echo=F}
+##setting image name
+fig_name <- paste(unique(park$Park), unique(park$Site), sep="_")
+
+##setting image file path
+file_path <- paste("Site images/", fig_name, ".png", sep="")
+
+#knitr::include_graphics(file_path)
+
+##creating object to print image
+site_image <- knitr::include_graphics(file_path)
+
+```
+
+```{r print site photo, echo=F, out.width="40%", fig.align="right", fig.alt = "test"}
+ 
+#site_map
+# site_image
+
+# fig.cap=paste(mysite, "is a", unique(park_data_24$cold_water), "water", unique(park_data_24$karst), "stream.", sep=" ")
+
+#fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" ")
+
+##fig.show='hold', 
+
+```
+
+
+```{r figure and photo, echo=F, fig.show="hold", out.width=c("55%", "45%")}
+par(mar = c(4, 4, .1, .1))
+
+bar_graph
+
+site_image
+
+```
+  
+Red flags (`r Rmoji::git_emoji("triangular_flag")`) indicate parameters that exceeded the acceptable threshold at least once in 2024.  
+  
+:::::::::::::: {.columns}
+
+<!-- COLUMN 1 -->
+::: {.column width="47.5%"}
 
 ```{r icons, include=F}
 ##creating function to print icons
@@ -479,33 +520,6 @@ icon <- function(df) {
 
 <!-- COLUMN 2 -->
 ::: {.column width="47.5%"}
-
-```{r setting up site photo, echo=F}
-##setting image name
-fig_name <- paste(unique(park$Park), unique(park$Site), sep="_")
-
-##setting image file path
-file_path <- paste("Site images/", fig_name, ".png", sep="")
-
-#knitr::include_graphics(file_path)
-
-##creating object to print image
-site_image <- knitr::include_graphics(file_path)
-
-```
-
-```{r print site photo, echo=F, out.width="85%", fig.align="right", fig.alt = "test"}
- 
-#site_map
-site_image
-
-# fig.cap=paste(mysite, "is a", unique(park_data_24$cold_water), "water", unique(park_data_24$karst), "stream.", sep=" ")
-
-#fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" ")
-
-##fig.show='hold', 
-
-```
 
 <!-- ![](`r file_path`){width=800px} -->
 
