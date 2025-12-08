@@ -35,6 +35,53 @@ metadata <- read.csv("wqp_ncrnwater_metadata.csv") %>%
   dplyr::mutate(cold_water=case_when(Park=="CATO" ~ "coldwater",
                               Park!="CATO" ~ "warmwater")) 
 
+##writing image alt text
+image_info <- metadata %>%
+  mutate(file_name=paste(Park, Site, sep="_")) %>%
+  select(file_name) %>%
+  distinct() %>%
+  mutate(alt_text=case_when(file_name=="ANTI_SHCK"~"Leafy branches partially obscure a wide stream that runs under a concrete overpass.",
+                            file_name=="CATO_BGHC"~"A wide stream filled with large rocks and surrounded by green trees.",
+                            file_name=="CATO_BLBZ"~"A forest stream with rocky banks retreats under a fenced walking path.",
+                            file_name=="CATO_OWCK"~"A stream filled with rocks and surrounded by grass and trees flows under a small bridge.",
+                            file_name=="GWMP_MICR"~"A stream filled with large rocks and woody debris, and surrounded by leafy plants and bare trees flows under a tall bridge.",
+                            file_name=="GWMP_MIRU"~"A wide, shallow stream filled with rocks and surrounded by standing and fallen trees flows under a road in the distance.",
+                            file_name=="GWMP_PIRU"~"A stream filled with large rocks surrouned by green plants and trees.",
+                            file_name=="GWMP_TURU"~"A stream, with rocky banks retreats into the distance.",
+                            file_name=="HAFE_FLSP"~"A stream retreats into the distance in a lush green forest.",
+                            file_name=="MANA_YOBR"~"A wide stream with muddy water retreats into the distance, with some bare tree trunks along its banks.",
+                            file_name=="MONO_BUCK"~"A wide stream surrounded by a sloping, rocky bank on the left, a grassy bank on the right, and bare trees flows around a bend.",
+                            file_name=="MONO_GAMI"~"A shallow stream with a pile of seidment in the middle surrounded by bare trees and patchy grass on the stream bank.",
+                            file_name=="NACE_HECR"~"A wide stream surrounded by lush green shrubs and trees.",
+                            file_name=="NACE_OXRU"~"A wide stream in an open field surrounded by grass on the left and tan pebbles on the right, with trees in the distance.",
+                            file_name=="NACE_STCK"~"A small stream surrounded by sediment, pebbles, and grass on the right side, and plants and trees on the left side.",
+                            file_name=="PRWI_BONE"~"A narrow stream surrounded by sparse bare trees, brown leaves on the ground, and some mosses on the stream bank.",
+                            file_name=="PRWI_CARU"~"A narrow stream filled with sediment and surrounded by green plants. Multiple fallen or leaning trees lay across the stream.",
+                            file_name=="PRWI_MARU"~"A narrow stream flows through a forest of trees with sparse or no leaves.",
+                            file_name=="PRWI_MBBR"~"A narrow stream filled with rocks flows through a lush, green forest.",
+                            file_name=="PRWI_NFQC"~"A wide stream surrounded by bare trees and some green plants flows around a bend.",
+                            file_name=="PRWI_ORRU"~"A narrow stream surrounded by grass, dead leaves, and a bare tree flows into a small pond.",
+                            file_name=="PRWI_SFQC"~"A wide stream surrounded by lush green trees",
+                            file_name=="PRWI_SORU"~"A wide stream surrounded by bare trees and some shrubs.",
+                            file_name=="PRWI_TARU"~"A shallow, narrow stream surrounded by green trees and plants flows into a culvert.",
+                            file_name=="ROCR_BAKE"~"A shallow stream filled with rocks and surrounded by green trees.",
+                            file_name=="ROCR_BRBR"~"A wide stream filled with rocks surrounded by a stone wall on the right, a hill on the left, and bare trees flows under a bridge road.",
+                            file_name=="ROCR_DUOA"~"A narrow stream filled with rocks and woody debris, surrounded by a sandy and muddy stream bank, flows through a green forest.",
+                            file_name=="ROCR_FEBR"~"A wide stream filled with rocks and surrounded by green plants and trees.",
+                            file_name=="ROCR_KLVA"~"A rocky stream with a wall and fence to the right surrounded by lush green plants and trees.",
+                            file_name=="ROCR_LUBR"~"A rocky stream surrounded by lush green plants and trees.",
+                            file_name=="ROCR_NOST"~"A wide, rocky stream surrounded by trees with sparse or no leaves and fallen leaves on the ground flows under a small bridge.",
+                            file_name=="ROCR_PHBR"~"A rocky sream surrounded by lush green plants and trees.",
+                            file_name=="ROCR_PYBR"~"A rocky stream surrounded by lush green plants and trees flows under a tall, green bridge.",
+                            file_name=="ROCR_R630"~"A rocky stream surrounded by lush green plants and trees.",
+                            file_name=="ROCR_ROC3"~"A wide stream with large rocks surrounded by trees.",
+                            file_name=="WOTR_CHCK"~"A wide stream runs through a forest of leaning green trees.",
+                            file_name=="WOTR_WOTR"~"A wide stream surrounded by bare trees and some green plants and mosses.",
+                            TRUE~""))
+
+
+
+
   
 ##filtering for park/site
 park <- metadata %>%
@@ -219,48 +266,6 @@ colnames(park_merged_long) = c("Parameter", "CharNameShort", "CharNameLower", "m
 
 ```
 
-```{r create figure old, echo=F, warning=F}
-##creating bar graph
-# bar_graph <- ggplot() +
-#   geom_bar(data=park_merged_long, aes(x=as.factor(x_pos), y=percent_pass, fill=years),
-#            width=0.7, color="black", size=0.8, position="dodge", stat="identity") +
-#   scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
-#   scale_x_discrete(labels=c("Acid\nneutralizing\ncapacity", "Dissolved\noxygen", "pH",
-#                              "Specific\nconductance", "Total\nnitrogen", "Total\nphosphorus", "Water\ntemperature")) +
-#   # ylab("% Passing") +
-#   coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 110), expand=F) +
-#   geom_text(data=park_merged_long, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
-#             position=position_dodge2(width=0.7, preserve="total"), size=4) +
-#   scale_color_manual(values=c("#E32636", "black"), guide="none") +
-#   theme_bw() +
-#   theme(axis.text.x=element_text(color="black", size=11, angle=35, vjust=0.6, hjust=0.5),
-#         axis.text.y=element_text(size=11),
-#         axis.title.x=element_blank(),
-#         axis.title.y=element_blank(),
-#         legend.text=element_text(size=11),
-#         legend.title=element_blank(),
-#         legend.position=c(0.095, -0.30),
-#         legend.direction="horizontal",
-#         plot.margin = unit(c(0,0.2,0.8,0), "cm"))
-
-#bar_graph
-
-```
-
-```{r setting up site photo old, echo=F}
-# ##setting image name
-# fig_name <- paste(unique(park$Park), unique(park$Site), sep="_")
-# 
-# ##setting image file path
-# file_path <- paste("Site images/", fig_name, ".png", sep="")
-# 
-# #knitr::include_graphics(file_path)
-# 
-# ##creating object to print image
-# site_image <- knitr::include_graphics(file_path)
-
-```
-
 ```{r functions, echo=F, include=F, warning=F}
 ##function to find month and year of last exceedance
 find_last_ex <- function(df, char) {
@@ -397,22 +402,6 @@ write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long
 
 ```
 
-```{r icons old, include=F}
-##creating function to print icons
-# icon <- function(df) {
-# 
-#   if (df$pass_fail=="F") {
-#     #"!"
-#     #knitr::asis_output("\U2666") 
-#     knitr::asis_output("\U25B2")
-#     } else{" "} 
-# 
-# }
-# 
-# icon(park_data_current[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])
-
-```
-
 
 ```{r create figure, echo=F, warning=F}
 ##creating bar graph
@@ -427,6 +416,7 @@ bar_graph <- ggplot() +
   geom_text(data=park_merged_long, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
             position=position_dodge2(width=0.7, preserve="total"), size=4) +
   scale_color_manual(values=c("#E32636", "black"), guide="none") +
+  labs(title="Percent of Measurements Passing") +
   theme_bw() +
   theme(axis.text.x=element_text(color="black", size=11, angle=35, vjust=0.6, hjust=0.5),
         axis.text.y=element_text(size=11),
@@ -436,19 +426,14 @@ bar_graph <- ggplot() +
         legend.title=element_blank(),
         legend.position=c(0.095, -0.30),
         legend.direction="horizontal",
+        plot.title=element_text(size=18, face="bold"),
         plot.margin = unit(c(0,0.2,0.9,0), "cm"))
 
 # bar_graph
 
-```
-
-```{r print figure, echo=F, out.width="55%", fig.align="left"}
-# bar_graph
-
-##fig.pos="h"
+fig_alt_text <- paste("A bar graph showing the percentage of passing measurements for seven water quality parameters at", mysite, "in", paste(mypark, ".", sep=""), "For each parameter, percentages of passing measurements are shown by two bars. Percent of passing measurements between", as.numeric(myyear)-5, "and", as.numeric(myyear)-1, "is shown by a gray bar on the left, while a blue bar on the right shows the percent of passing measurements in", paste(myyear, ".", sep=""), "The percentage of passing measurements for", as.numeric(myyear)-5, "through", as.numeric(myyear)-1, "and", paste(myyear, ",", sep=""), "respectively, are as follows for each parameter. Acid neutralizing capacity,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="ANC" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="ANC" & park_merged_long$years==myyear], "percent.", "Dissolved oxygen,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="DO" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="DO" & park_merged_long$years==myyear], "percent.", "PH,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="pH" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="pH" & park_merged_long$years==myyear], "percent.", "Specific conductance,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Specific conductance" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Specific conductance" & park_merged_long$years==myyear], "percent.", "Total nitrogen", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Total nitrogen" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Total nitrogen" & park_merged_long$years==myyear], "percent.", "Total phosphorus,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Total phosphorus" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Total phosphorus" & park_merged_long$years==myyear], "percent.", "Water temperature,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Water temperature" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Water temperature" & park_merged_long$years==myyear], "percent.", sep=" ")
 
 ```
-
 
 ```{r setting up site photo, echo=F}
 ##setting image name
@@ -462,23 +447,11 @@ file_path <- paste("Site images/", fig_name, ".png", sep="")
 ##creating object to print image
 site_image <- knitr::include_graphics(file_path)
 
-```
-
-```{r print site photo, echo=F, out.width="45%", fig.align="right", fig.alt = "test"}
- 
-#site_map
-# site_image
-
-# fig.cap=paste(mysite, "is a", unique(park_data_24$cold_water), "water", unique(park_data_24$karst), "stream.", sep=" ")
-
-#fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), "water", unique(park_data_current$karst), "stream.", sep=" ")
-
-##fig.show='hold', 
+img_alt_text <- image_info$alt_text[image_info$file_name==fig_name]
 
 ```
 
-
-```{r figure and photo, echo=F, fig.show="hold", out.width=c("53%", "47%"), fig.alt = c("test1", "test2"), fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), unique(park_data_current$karst), "stream.", sep=" ")}
+```{r figure and photo, echo=F, fig.show="hold", out.width=c("53%", "47%"), fig.alt = c(fig_alt_text, img_alt_text), fig.cap=paste(mysite, "is a", unique(park_data_current$cold_water), unique(park_data_current$karst), "stream.", sep=" ")}
 par(mar = c(4, 4, .1, .1))
 
 bar_graph
