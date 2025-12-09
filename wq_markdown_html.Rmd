@@ -109,6 +109,9 @@ five_yr_range <- paste(as.character(start_year), as.character(end_year), sep="\U
 title: `r params$Year` Water Quality Summary
 subtitle: "`r mypark`: `r mysite`"
 --- 
+
+<!-- [Click here](https://irma.nps.gov/DataStore/Reference/Profile/2170023) for a printable PDF version of this page. -->
+<!-- $~$   -->
 $~$  
 
 ```{css, echo=F}
@@ -474,7 +477,8 @@ site_image
 
 $~$
   
-Red flags (`r Rmoji::git_emoji("triangular_flag")`) indicate parameters that exceeded the acceptable threshold at least once in 2024.  
+`r Rmoji::git_emoji("triangular_flag")` Red flags indicate parameters that exceeded the acceptable threshold at least once in 2024.
+$~$  
   
 :::::::::::::: {.columns}
 <!-- :::: {style="display: flex;"} -->
@@ -560,6 +564,9 @@ This report summarizes water quality data from `r start_year` to `r myyear` for 
 ::::::::::::::
 
 
+<font size="3">A **printable PDF version** of this page is available in the **[NPS DataStore](https://irma.nps.gov/DataStore/Reference/Profile/2170023)**.</font>
+$~$ 
+$~$  
 <!-- ::: -->
 
 <!-- :::: -->
