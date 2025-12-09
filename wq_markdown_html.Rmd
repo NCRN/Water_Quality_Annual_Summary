@@ -99,19 +99,11 @@ five_yr_range <- paste(as.character(start_year), as.character(end_year), sep="\U
 
 ```
 
-<!-- --- -->
-<!-- title: | -->
-<!--   | \vspace{-2em} \huge \textbf{`r params$Year` Water Quality Summary}  -->
-<!--   | \LARGE `r mypark`: `r mysite` \vspace{-1em} -->
-<!-- --- -->
-
 ---
 title: `r params$Year` Water Quality Summary
 subtitle: "`r mypark`: `r mysite`"
 --- 
 
-<!-- [Click here](https://irma.nps.gov/DataStore/Reference/Profile/2170023) for a printable PDF version of this page. -->
-<!-- $~$   -->
 $~$  
 
 ```{css, echo=F}
@@ -434,6 +426,7 @@ bar_graph <- ggplot() +
 
 # bar_graph
 
+##creating alt text for figure
 fig_alt_text <- paste("A bar graph showing the percentage of passing measurements for seven water quality parameters at", mysite, "in", paste(mypark, ".", sep=""), "For each parameter, percentages of passing measurements are shown by two bars. Percent of passing measurements between", as.numeric(myyear)-5, "and", as.numeric(myyear)-1, "is shown by a gray bar on the left, while a blue bar on the right shows the percent of passing measurements in", paste(myyear, ".", sep=""), "The percentage of passing measurements for", as.numeric(myyear)-5, "through", as.numeric(myyear)-1, "and", paste(myyear, ",", sep=""), "respectively, are as follows for each parameter. Acid neutralizing capacity,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="ANC" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="ANC" & park_merged_long$years==myyear], "percent.", "Dissolved oxygen,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="DO" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="DO" & park_merged_long$years==myyear], "percent.", "PH,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="pH" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="pH" & park_merged_long$years==myyear], "percent.", "Specific conductance,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Specific conductance" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Specific conductance" & park_merged_long$years==myyear], "percent.", "Total nitrogen", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Total nitrogen" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Total nitrogen" & park_merged_long$years==myyear], "percent.", "Total phosphorus,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Total phosphorus" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Total phosphorus" & park_merged_long$years==myyear], "percent.", "Water temperature,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Water temperature" & park_merged_long$years==five_yr_range], "percent,", park_merged_long$percent_pass[park_merged_long$CharNameShort=="Water temperature" & park_merged_long$years==myyear], "percent.", sep=" ")
 
 ```
@@ -445,11 +438,10 @@ fig_name <- paste(unique(park$Park), unique(park$Site), sep="_")
 ##setting image file path
 file_path <- paste("Site images/", fig_name, ".png", sep="")
 
-#knitr::include_graphics(file_path)
-
 ##creating object to print image
 site_image <- knitr::include_graphics(file_path)
 
+##pulling alt text from image_info dataframe
 img_alt_text <- image_info$alt_text[image_info$file_name==fig_name]
 
 ```
@@ -463,31 +455,17 @@ site_image
 
 ```
 
-<!-- :::::::::::::: {.columns} -->
-
-<!-- ::: {.column width="55%"} -->
-
-<!-- ::: -->
-
-<!-- ::: {.column width="45%"} -->
-<!-- <font size ="2">`r mysite` is a `r unique(park_data_current$cold_water)` `r unique(park_data_current$karst)` stream.</font> -->
-<!-- ::: -->
-
-<!-- :::::::::::::: -->
 
 $~$
   
 `r Rmoji::git_emoji("triangular_flag")` Red flags indicate parameters that exceeded the acceptable threshold at least once in 2024.
 $~$  
   
+<!-- starting 2 column format -->
 :::::::::::::: {.columns}
-<!-- :::: {style="display: flex;"} -->
-<!-- <div style="display: flex;"> -->
 
 <!-- COLUMN 1 -->
 ::: {.column width="47.5%"}
-<!-- ::: {} -->
-<!-- <div> -->
   
 ```{r icons, include=F}
 ##creating function to print icons
@@ -525,7 +503,6 @@ $~$
 `r write_text(wq_data_total, "Specific conductance", park_merged_wide, park_merged_long)`  
 
 :::
-<!-- </div> -->
 
 ::: {.column width="5%"}
 <!-- blank space -->
@@ -533,10 +510,6 @@ $~$
 
 <!-- COLUMN 2 -->
 ::: {.column width="47.5%"}
-<!-- ::: {} -->
-<!-- <div> -->
-
-<!-- ![](`r file_path`){width=800px} -->
 
 ##### **Total Nitrogen** `r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`   
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
@@ -567,12 +540,6 @@ This report summarizes water quality data from `r start_year` to `r myyear` for 
 <font size="3">A **printable PDF version** of this page is available in the **[NPS DataStore](https://irma.nps.gov/DataStore/Reference/Profile/2170023)**.</font>
 $~$ 
 $~$  
-<!-- ::: -->
 
-<!-- :::: -->
-
-<!-- </div> -->
-
-<!-- </div> -->
 
 
