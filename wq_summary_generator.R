@@ -14,6 +14,7 @@ codes <- unique(metadata$code)
 
 # codes <- codes[35:37]
 
+##PDF versions
 OutFiles<-paste0(codes,"_",Year,"_","summary.pdf")
 
 RenderSummary<-function(Code, File, Year){ 
@@ -22,12 +23,17 @@ RenderSummary<-function(Code, File, Year){
                                                 Year=Year), output_file = File)
 }
 
-# RenderSummary<-function(Code, File, Year){ 
-#   render(input="wq_markdown_2_code_edits.Rmd", params=list(Park=strsplit(Code, "_")[[1]][1], 
-#                                                 Site=strsplit(Code, "_")[[1]][2], 
-#                                                 Year=Year), output_file = File)
-# }
-
-# pwalk(list(c(codes, OutFiles, Year)), .f=RenderSummary)
-
 walk2(.x=codes, .y=OutFiles, .f=RenderSummary, Year=Year)
+
+
+##HTML versions
+OutFiles_html<-paste0(codes,"_",Year,"_","summary.html")
+
+RenderSummary_html<-function(Code, File, Year){ 
+  render(input="wq_markdown_html.Rmd", params=list(Park=strsplit(Code, "_")[[1]][1], 
+                                                Site=strsplit(Code, "_")[[1]][2], 
+                                                Year=Year), output_file = File)
+}
+
+
+walk2(.x=codes, .y=OutFiles_html, .f=RenderSummary_html, Year=Year)
