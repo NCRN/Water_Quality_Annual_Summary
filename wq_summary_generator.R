@@ -12,8 +12,6 @@ metadata <- metadata %>%
 
 codes <- unique(metadata$code)
 
-# codes <- codes[35:37]
-
 ##PDF versions
 OutFiles<-paste0(codes,"_",Year,"_","summary.pdf")
 

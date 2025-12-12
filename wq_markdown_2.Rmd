@@ -14,15 +14,14 @@ header-includes:
 - \usepackage{fancyhdr}
 - \usepackage{hyperref}
 - \pagestyle{fancy}
-- \fancyfoot[L]{\normalsize \color{red}`r knitr::asis_output("\U25B2")` \color{black}Red triangles indicate parameters that exceeded the acceptable threshold at least once in 2024.\\An \textbf{accessible HTML version} of this document is available in the \textbf{\href{https://irma.nps.gov/DataStore/Reference/Profile/2170023}{{NPS DataStore}}}.}
-# - \fancyfoot[L]{\normalsize An \textbf{accessible HTML version} of this document is available in the \textbf{\href{https://irma.nps.gov/DataStore/Reference/Profile/2170023}{{NPS DataStore}}}.}
+- \fancyfoot[L]{\normalsize \color{red}`r knitr::asis_output("\U25B2")` \color{black}Red triangles indicate parameters that exceeded the acceptable threshold at least once in 2024.\\An \textbf{accessible HTML version} of this document is available in the \textbf{\href{https://irma.nps.gov/DataStore/Reference/Profile/2316392}{{NPS DataStore}}}.}
 - \fancypagestyle{plain}{\pagestyle{fancy}}
 - \renewcommand{\headrulewidth}{0pt}
 geometry: margin=1.5cm
 always_allow_html: true
 params:
-  Park: "NACE"
-  Site: "OXRU"
+  Park: "MONO"
+  Site: "BUCK"
   Year: "2024"
 ---
 
@@ -136,8 +135,8 @@ wq_data_total <- merge(wq_data1, thresholds,
                                      CharNameShort=="Total phosphorus"~"total phosphorus",
                                      TRUE~CharNameShort)) %>%
   ##creating pass/fail column
-  dplyr::mutate(pass_fail=case_when(ResultMeasureValue>UpperPoint~"F",
-                             ResultMeasureValue<LowerPoint~"F",
+  dplyr::mutate(pass_fail=case_when(ResultMeasureValue>=UpperPoint~"F",
+                             ResultMeasureValue<=LowerPoint~"F",
                              TRUE~"P")) %>%
   ##calculating percent pass for each parameter per sampling year
   dplyr::group_by(CharacteristicName, sample_year) %>%
