@@ -192,8 +192,11 @@ wq_data_total <- merge(wq_data1, thresholds,
   dplyr::mutate(min=min(ResultMeasureValue),
          max=max(ResultMeasureValue)) %>%
   ##rounding to two decimal places in min and max columns
-  dplyr::mutate(min=round(min, digits=2),
-         max=round(max, digits=2))  
+  dplyr::mutate(min=case_when(CharNameShort=="Total phosphorus"~round(min, digits=3),
+                              TRUE~round(min, digits=2)),
+         max=case_when(CharNameShort=="Total phosphorus"~round(max, digits=3),
+                              TRUE~round(max, digits=2)))
+
 
 ##changing column names
 colnames(wq_data_total) <- c("CharacteristicName", "Date", "SiteName",
@@ -393,6 +396,7 @@ write_text <- function(df, char, data_wide, data_long) {
     
 }
 
+##testing function
 write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long)
 
 ```
@@ -406,7 +410,6 @@ bar_graph <- ggplot() +
   scale_fill_manual(name="Years", values=c("gray85", "#8DA0CB")) +
   scale_x_discrete(labels=c("Acid\nneutralizing\ncapacity", "Dissolved\noxygen", "pH",
                              "Specific\nconductance", "Total\nnitrogen", "Total\nphosphorus", "Water\ntemperature")) +
-  # ylab("% Passing") +
   coord_cartesian(xlim=c(0.3, 7.6), ylim=c(0, 110), expand=F) +
   geom_text(data=park_merged_long, aes(x=as.factor(x_pos), y=percent_pass + 3.5, group=years, label=percent_pass, color=colors),
             position=position_dodge2(width=0.7, preserve="total"), size=4) +
