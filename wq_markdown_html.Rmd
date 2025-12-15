@@ -104,7 +104,7 @@ title: `r params$Year` Water Quality Summary
 subtitle: "`r mypark`: `r mysite`"
 --- 
 
-$~$  
+<br>
 
 ```{css, echo=F}
 img {vertical-align: top;}
@@ -456,10 +456,10 @@ site_image
 ```
 
 
-$~$
+<br>
   
 `r Rmoji::git_emoji("triangular_flag")` Red flags indicate parameters that exceeded the acceptable threshold at least once in 2024.
-$~$  
+<br>
   
 <!-- starting 2 column format -->
 :::::::::::::: {.columns}
@@ -483,19 +483,19 @@ icon <- function(df) {
 **Acceptable values:** Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
 `r write_text(wq_data_total, "ANC", park_merged_wide, park_merged_long)`  
-$~$    
+<br>
   
 ##### **Dissolved Oxygen (DO)** `r icon(park_data_current[park_data_current$CharacteristicName=="Dissolved oxygen (DO)",])`    
 **Acceptable values:** Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]`   
 `r write_text(wq_data_total, "DO", park_merged_wide, park_merged_long)`  
-$~$    
+<br>
   
 ##### **pH** `r icon(park_data_current[park_data_current$CharacteristicName=="pH",])`    
 **Acceptable range:** `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="pH"]` – `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="pH"]`    
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="pH"]` – `r park_data_current$max[park_data_current$CharacteristicName=="pH"]`  
 `r write_text(wq_data_total, "pH", park_merged_wide, park_merged_long)` `r ph_ex(pH_df)`  
-$~$    
+<br>
   
 ##### **Specific Conductance** `r icon(park_data_current[park_data_current$CharacteristicName=="Specific conductance",])`    
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
@@ -515,19 +515,19 @@ $~$
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 `r write_text(wq_data_total, "Total nitrogen", park_merged_wide, park_merged_long)`  
-$~$    
+<br>
   
 ##### **Total Phosphorus** `r icon(park_data_current[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms",])`  
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 `r write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long)`.  
-$~$    
+<br>
   
 ##### **Water Temperature**`r icon(park_data_current[park_data_current$CharacteristicName=="Temperature, water",])`    
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Temperature, water"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`   
 `r write_text(wq_data_total, "Water temperature", park_merged_wide, park_merged_long)`  
-$~$    
+<br>
     
 ##### **Water Quality Monitoring in the NCR**  
 This report summarizes water quality data from `r start_year` to `r myyear` for seven parameters. The National Capital Region Inventory & Monitoring Network (NCRN I&M) monitors additional water quality parameters, including depth, discharge, conductivity, and total dissolved solids. These data are available in the [NCRN I\&M water quality data visualizer](https://irma.nps.gov/DataStore/Reference/Profile/2237386). Visit the [NCRN I&M water quality monitoring webpage](https://www.nps.gov/im/ncrn/water.htm) to learn more. 
@@ -535,11 +535,11 @@ This report summarizes water quality data from `r start_year` to `r myyear` for 
 :::
 
 ::::::::::::::
-
-
+  
+  
 <font size="3">A **printable PDF version** of this page is available in the **[NPS DataStore](https://irma.nps.gov/DataStore/Reference/Profile/2316392)**.</font>
-$~$ 
-$~$  
+<br>
+<br>
 
 
 
