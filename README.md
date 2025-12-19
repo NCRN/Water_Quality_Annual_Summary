@@ -1,0 +1,2 @@
+Parameterized water quality annual summaries highlighting acid neutralizing capacity, dissolved oxygen, pH, specific conductance, total nitrogen, total phosphorus, and water temperature in park streams monitored by NCRN. 
+Reports are stored in the following DataStore reference: Stream Water Quality Annual Summaries for 2024, National Capital Region Network Parks, https://irma.nps.gov/DataStore/Reference/Profile/2316392
