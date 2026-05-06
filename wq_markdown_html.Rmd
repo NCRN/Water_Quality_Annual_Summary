@@ -18,7 +18,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ##load packages
 library(dplyr)
 library(ggplot2)
-
+source('R/ph_ex.R')
+source('R/write_text.R')
 ```
 
 ```{r meta data, include=F}
@@ -331,19 +332,6 @@ increase_decrease(park_merged_wide, "ANC")
 ##creating dataframe with only pH
 pH_df <- wq_data_total[wq_data_total$CharacteristicName=="pH" & wq_data_total$sample_year>2018,]
 
-##function to show directionality of pH exceedances
-ph_ex <- function(df) {
-  
-  if(nrow(df[df$pH_exceed=="acidic",]) > nrow(df[df$pH_exceed=="basic",])) {
-    paste("Most pH exceedances at", mysite, "are acidic (lower than 6).", sep=" ")
-  } else if(nrow(df[df$pH_exceed=="basic",]) > nrow(df[df$pH_exceed=="acidic",])) {
-    paste("Most pH exceedances at", mysite, "are basic (greater than 9).", sep=" ") 
-  } else {
-      print("")
-    }
-  
-}
-
 ##testing function
 ph_ex(pH_df)
 
@@ -358,44 +346,7 @@ ph_ex(pH_df)
 ##if neither 0 nor 100% pass in current year and changed from 5 years prior: text5
 ##if neither 0 nor 100% pass in current year and same value as 5 years prior: text 6
 
-##creating function to paste text
-write_text <- function(df, char, data_wide, data_long) {
-  
-  ##text options
-  text1 <- paste("All", data_wide$CharNameLower[data_wide$CharNameShort==char], "measurements at", mysite, "were passing in", myyear, "and the five years prior.", sep=" ")
-  text2 <- paste("All", data_wide$CharNameLower[data_wide$CharNameShort==char], "measurements at", mysite, "were passing in", myyear, sep=" ")
-  text3 <- paste("All", data_wide$CharNameLower[data_wide$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, "and the five years prior.", sep=" ")
-  text4 <- paste("All", data_wide$CharNameLower[data_wide$CharNameShort==char], "measurements at", mysite, "exceeded the acceptable threshold", "in", myyear, sep=" ")
-  text5 <- paste(paste(data_long$major_P_F[data_long$CharNameShort==char & data_long$years==myyear], ".", sep=""),"The percentage of passing measurements",  
-                 increase_decrease(data_wide, char), "compared to the five years prior.", sep=" ")
-  text6 <- paste(paste(data_long$major_P_F[data_long$CharNameShort==char & data_long$years==myyear], ".", sep=""),"The percentage of passing measurements",  
-                 increase_decrease(data_wide, char), "as the five years prior.", sep=" " )
-  text7 <- paste("The percentage of passing measurements",  increase_decrease(data_wide, char), "compared to the five years prior.", sep=" ")
-  
-  ##conditions for each text option
-  if (mean(df$percent_pass[df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==100) {
-    my_text <- text1
-  } else if (mean(df$percent_pass[df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==100 &
-             mean(df$percent_pass[df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=100) {
-    my_text <- paste(paste(text2, ".", sep=""), text7, sep=" ")
-  } else if (mean(df$percent_pass[df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)==0) {
-    my_text <- text3
-  } else if (mean(df$percent_pass[df$CharNameShort==char & df$sample_year==myyear], na.rm=T)==0 &
-             mean(df$percent_pass[df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=0) {
-    my_text <- paste(paste(text4, ".", sep=""), text7, sep=" ")
-  } else if (increase_decrease(data_wide, char) %in% c("decreased considerably", "decreased", "decreased slightly", "increased considerably", "increased", "increased slightly")) {
-    my_text<-text5
-  } else if (mean(df$percent_pass[df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=100 &
-             mean(df$percent_pass[df$CharNameShort==char & df$sample_year>=start_year], na.rm=T)!=0 &
-             increase_decrease(data, char)=="remained the same") {
-    my_text <- text6
-  }else {
-    my_text <- print("test")
-  }
-  
-  return(my_text)
-    
-}
+
 
 ##testing function
 write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long)

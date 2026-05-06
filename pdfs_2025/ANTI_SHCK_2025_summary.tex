@@ -1,0 +1,163 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\documentclass[
+  11pt,
+  twocolumn]{article}
+\usepackage{xcolor}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+  \setmainfont[]{Arial}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\pagenumbering{gobble}
+\setlength{\columnsep}{2em}
+\setlength{\headheight}{13.6pt}
+\addtolength{\topmargin}{-15pt}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\pagestyle{fancy}
+\fancyfoot[L]{\normalsize \color{red}▲ \color{black}Red triangles indicate parameters that exceeded the acceptable threshold at least once in 2024.\\An \textbf{accessible HTML version} of this document is available in the \textbf{\href{https://irma.nps.gov/DataStore/Reference/Profile/2316392}{{NPS DataStore}}}.}
+\fancypagestyle{plain}{\pagestyle{fancy}}
+\renewcommand{\headrulewidth}{0pt}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  colorlinks=true,
+  linkcolor={Maroon},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={RoyalBlue},
+  pdfcreator={LaTeX via pandoc}}
+
+\title{\vspace{-2em} \huge \textbf{2025 Water Quality Summary}\\
+\LARGE Antietam National Battlefield: Sharpsburg Creek \vspace{-1em}}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+\Large \textbf{Percent of Measurements Passing} \vspace{-1.5em}
+
+\begin{flushleft}\includegraphics[width=1.2\linewidth]{pdfs_2025/ANTI_SHCK_2025_summary_files/figure-latex/print figure-1} \end{flushleft}
+
+\Large \textbf{Acid Neutralizing Capacity (ANC)}
+\textbf{\textcolor{red}{ }}\\
+\normalsize \textbf{Acceptable values:} Above 600 µeq/L\\
+\textbf{2025 range:} 4822 -- 5322.15 µeq/L\\
+All ANC measurements at Sharpsburg Creek were passing in 2025 and the
+five years prior.\\
+\vspace{1pt}\\
+\Large \textbf{Dissolved Oxygen (DO)} \textbf{\textcolor{red}{ }}\\
+\normalsize \textbf{Acceptable values:} Above 5 mg/L\\
+\textbf{2025 range:} 9.55 -- 11.33 mg/L\\
+All DO measurements at Sharpsburg Creek were passing in 2025 and the
+five years prior.\\
+\vspace{1pt}\\
+\Large \textbf{pH} \textbf{\textcolor{red}{ }}\\
+\normalsize \textbf{Acceptable range:} 6 -- 9\\
+\textbf{2025 range:} 8.11 -- 8.59\\
+All pH measurements at Sharpsburg Creek were passing in 2025 and the
+five years prior.\\
+\vspace{1pt}\\
+\Large \textbf{Specific Conductance} \textbf{\textcolor{red}{▲}}\\
+\normalsize \textbf{Acceptable values:} Below 171 µS/cm\\
+\textbf{2025 range:} 661 -- 730 µS/cm\\
+All specific conductance measurements at Sharpsburg Creek exceeded the
+acceptable threshold in 2025 and the five years prior.
+
+\vfill\eject
+
+\[\\[-1.55em]\]
+
+\begin{flushright}\includegraphics[width=0.85\linewidth,alt={test}]{Site images/ANTI_SHCK} \end{flushright}
+
+\vspace{-1.5em}
+\begin{flushright}
+\begin{minipage}{0.85\columnwidth}
+\small Sharpsburg Creek is a warmwater karst stream.
+\end{minipage}
+\end{flushright}
+
+\[\\[-2.85em]\]
+
+\Large \textbf{Total Nitrogen} \textbf{\textcolor{red}{▲}}\\
+\normalsize \textbf{Acceptable values:} Below 0.31 mg/L\\
+\textbf{2025 range:} 4.72 -- 5.8 mg/L\\
+All total nitrogen measurements at Sharpsburg Creek exceeded the
+acceptable threshold in 2025 and the five years prior.\\
+\vspace{-1pt}\\
+\Large \textbf{Total Phosphorus} \textbf{\textcolor{red}{▲}}\\
+\normalsize \textbf{Acceptable values:} Below 0.01 mg/L\\
+\textbf{2025 range:} 0.022 -- 0.031 mg/L\\
+All total phosphorus measurements at Sharpsburg Creek exceeded the
+acceptable threshold in 2025 and the five years prior.\\
+\vspace{-1pt}\\
+\Large \textbf{Water Temperature} \textbf{\textcolor{red}{ }}\\
+\normalsize \textbf{Acceptable values:} Below 32 °C\\
+\textbf{2025 range:} 9.2 -- 16.3 °C\\
+All water temperature measurements at Sharpsburg Creek were passing in
+2025 and the five years prior.\\
+\vspace{2pt}\\
+\Large \textbf{Water Quality Monitoring in the NCR}\\
+\normalsize This report summarizes water quality data from 2020 to 2025
+for seven parameters. The National Capital Region Inventory \&
+Monitoring Network (NCRN I\&M) monitors additional water quality
+parameters, including depth, discharge, conductivity, and total
+dissolved solids. These data are available in the
+\href{https://irma.nps.gov/DataStore/Reference/Profile/2237386}{NCRN
+I\&M water quality data visualizer}. Visit the
+\href{https://www.nps.gov/im/ncrn/water.htm}{NCRN I\&M water quality
+monitoring webpage} to learn more.
+
+\end{document}
