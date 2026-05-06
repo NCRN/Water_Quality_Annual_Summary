@@ -85,9 +85,10 @@ colnames(thresholds) <- c("CharacteristicName", "LowerPoint", "UpperPoint", "Uni
                           "karst", "nutrient_ecoregion", "cold_water")
 
 ##loading in water quality data
-wq_data <- read.csv("wqp.csv") %>%
-  dplyr::mutate(MonitoringLocationName=case_when(MonitoringLocationName=="Battery Kemble Run"~"Battery Kemble Creek",
-                                                 TRUE~MonitoringLocationName))
+wq_data <- read.csv("wqp.csv")
+# wq_data <- read.csv("wqp.csv") %>%
+#   dplyr::mutate(MonitoringLocationName=case_when(MonitoringLocationName=="Battery Kemble Run"~"Battery Kemble Creek",
+#                                                  TRUE~MonitoringLocationName))
 
 ##selecting columns
 wq_data1 <- wq_data %>%

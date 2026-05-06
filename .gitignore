@@ -10,3 +10,5 @@ wq_markdown.Rmd
 *.png
 *.pptx
 *.html
+renv/
+.Rprofile

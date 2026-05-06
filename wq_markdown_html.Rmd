@@ -4,9 +4,9 @@ output: html_document
 #   pagedown::html_paged:
 #     self_contained: false
 params:
-  Park: "PRWI"
-  Site: "MBBR"
-  Year: "2024"
+  Park: "ROCR"
+  Site: "BAKE"
+  Year: "2025"
 ---
 
 ```{r setup, include=FALSE}
@@ -127,9 +127,10 @@ colnames(thresholds) <- c("CharacteristicName", "LowerPoint", "UpperPoint", "Uni
                           "karst", "nutrient_ecoregion", "cold_water")
 
 ##loading in water quality data
-wq_data <- read.csv("wqp.csv") %>%
-  dplyr::mutate(MonitoringLocationName=case_when(MonitoringLocationName=="Battery Kemble Run"~"Battery Kemble Creek",
-                                                 TRUE~MonitoringLocationName))
+wq_data <- read.csv("wqp.csv")
+# wq_data <- read.csv("wqp.csv") %>%
+#   dplyr::mutate(MonitoringLocationName=case_when(MonitoringLocationName=="Battery Kemble Run"~"Battery Kemble Creek",
+#                                                  TRUE~MonitoringLocationName))
 
 ##selecting columns
 wq_data1 <- wq_data %>%
@@ -461,7 +462,7 @@ site_image
 
 <br>
   
-`r Rmoji::git_emoji("triangular_flag")` Red flags indicate parameters that exceeded the acceptable threshold at least once in 2024.
+`r Rmoji::git_emoji("triangular_flag")` Red flags indicate parameters that exceeded the acceptable threshold at least once in 2025.
 <br>
   
 <!-- starting 2 column format -->
