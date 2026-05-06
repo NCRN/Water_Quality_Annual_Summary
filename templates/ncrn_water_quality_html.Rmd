@@ -4,9 +4,9 @@ output: html_document
 #   pagedown::html_paged:
 #     self_contained: false
 params:
-  Park: "ROCR"
-  Site: "BAKE"
-  Year: "2025"
+  Park: ""
+  Site: ""
+  Year: ""
   Metadata: ""
   Data: ""
 ---
@@ -20,18 +20,17 @@ knitr::opts_chunk$set(echo = TRUE)
 ##load packages
 library(dplyr)
 library(ggplot2)
-source('R/ph_ex.R')
-source('R/write_text.R')
-source('R/increase_decrease.R')
-source('R/find_first_year.R')
-source('R/find_last_pass.R')
-source('R/find_last_ex.R')
-source('R/image_alt_text.R')
-source('R/parse_metadata.R')
+source('../R/ph_ex.R')
+source('../R/write_text.R')
+source('../R/find_first_year.R')
+source('../R/find_last_pass.R')
+source('../R/find_last_ex.R')
+source('../R/image_alt_text.R')
+source('../R/parse_metadata.R')
 ```
 
 ```{r meta data, include=F}
-metadata <- parse_metadata(params$Metadata)
+metadata <- parse_metadata(file.path('../',params$Metadata))
 
 ##writing image alt text
 image_info <- image_alt_text(metadata, Park, Site)
@@ -80,7 +79,8 @@ colnames(thresholds) <- c("CharacteristicName", "LowerPoint", "UpperPoint", "Uni
                           "karst", "nutrient_ecoregion", "cold_water")
 
 ##loading in water quality data
-wq_data <- read.csv("wqp.csv")
+# wq_data <- read.csv("wqp.csv")
+wq_data <- read.csv(file.path('../',params$Data))
 # wq_data <- read.csv("wqp.csv") %>%
 #   dplyr::mutate(MonitoringLocationName=case_when(MonitoringLocationName=="Battery Kemble Run"~"Battery Kemble Creek",
 #                                                  TRUE~MonitoringLocationName))
@@ -221,20 +221,20 @@ park_merged_long <- park_merged_wide %>%
 
 ```{r functions, echo=F, include=F, warning=F}
 ##testing function 
-find_last_ex(wq_data_total, "Total phosphorus")
+# find_last_ex(wq_data_total, "Total phosphorus")
 
 ##testing function
-find_last_pass(wq_data_total, "Total phosphorus")
+# find_last_pass(wq_data_total, "Total phosphorus")
 
 ##testing function
-find_first_year(wq_data_total, "Total nitrogen")
+# find_first_year(wq_data_total, "Total nitrogen")
 
 ```
 
 ```{r increase decrease, echo=F, include=F, warning=F}
 
 ##testing function
-increase_decrease(park_merged_wide, "ANC")
+# increase_decrease(park_merged_wide, "ANC")
 
 ```
 
@@ -243,7 +243,7 @@ increase_decrease(park_merged_wide, "ANC")
 pH_df <- wq_data_total[wq_data_total$CharacteristicName=="pH" & wq_data_total$sample_year>2018,]
 
 ##testing function
-ph_ex(pH_df)
+# ph_ex(pH_df, mysite)
 
 ```
 
@@ -259,7 +259,7 @@ ph_ex(pH_df)
 
 
 ##testing function
-write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long)
+# write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long, mysite, myyear, start_year)
 
 ```
 
@@ -301,7 +301,8 @@ fig_alt_text <- paste("A bar graph showing the percentage of passing measurement
 fig_name <- paste(unique(park$Park), unique(park$Site), sep="_")
 
 ##setting image file path
-file_path <- paste("Site images/", fig_name, ".png", sep="")
+# file_path <- file.path('..','Site images', fig_name, ".png")
+file_path <- paste0('../Site images/', fig_name, ".png")
 
 ##creating object to print image
 site_image <- knitr::include_graphics(file_path)
@@ -347,25 +348,25 @@ icon <- function(df) {
 ##### **Acid Neutralizing Capacity (ANC)** `r icon(park_data_current[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)",])`       
 **Acceptable values:** Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`   
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Acid Neutralizing Capacity (ANC)"]`  
-`r write_text(wq_data_total, "ANC", park_merged_wide, park_merged_long)`  
+`r write_text(wq_data_total, "ANC", park_merged_wide, park_merged_long, mysite, myyear, start_year)`  
 <br>
   
 ##### **Dissolved Oxygen (DO)** `r icon(park_data_current[park_data_current$CharacteristicName=="Dissolved oxygen (DO)",])`    
 **Acceptable values:** Above `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Dissolved oxygen (DO)"]`   
-`r write_text(wq_data_total, "DO", park_merged_wide, park_merged_long)`  
+`r write_text(wq_data_total, "DO", park_merged_wide, park_merged_long, mysite, myyear, start_year)`  
 <br>
   
 ##### **pH** `r icon(park_data_current[park_data_current$CharacteristicName=="pH",])`    
 **Acceptable range:** `r park_data_current$LowerPoint[park_data_current$CharacteristicName=="pH"]` – `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="pH"]`    
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="pH"]` – `r park_data_current$max[park_data_current$CharacteristicName=="pH"]`  
-`r write_text(wq_data_total, "pH", park_merged_wide, park_merged_long)` `r ph_ex(pH_df)`  
+`r write_text(wq_data_total, "pH", park_merged_wide, park_merged_long, mysite, myyear, start_year)` `r ph_ex(pH_df, mysite)`  
 <br>
   
 ##### **Specific Conductance** `r icon(park_data_current[park_data_current$CharacteristicName=="Specific conductance",])`    
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Specific conductance"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Specific conductance"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Specific conductance"]`  
-`r write_text(wq_data_total, "Specific conductance", park_merged_wide, park_merged_long)`  
+`r write_text(wq_data_total, "Specific conductance", park_merged_wide, park_merged_long, mysite, myyear, start_year)`  
 
 :::
 
@@ -379,19 +380,19 @@ icon <- function(df) {
 ##### **Total Nitrogen** `r icon(park_data_current[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms",])`   
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Nitrogen, mixed forms"]`  
-`r write_text(wq_data_total, "Total nitrogen", park_merged_wide, park_merged_long)`  
+`r write_text(wq_data_total, "Total nitrogen", park_merged_wide, park_merged_long, mysite, myyear, start_year)`  
 <br>
   
 ##### **Total Phosphorus** `r icon(park_data_current[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms",])`  
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
-`r write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long)`.  
+`r write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long, mysite, myyear, start_year)`.  
 <br>
   
 ##### **Water Temperature**`r icon(park_data_current[park_data_current$CharacteristicName=="Temperature, water",])`    
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Temperature, water"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Temperature, water"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Temperature, water"]`   
-`r write_text(wq_data_total, "Water temperature", park_merged_wide, park_merged_long)`  
+`r write_text(wq_data_total, "Water temperature", park_merged_wide, park_merged_long, mysite, myyear, start_year)`  
 <br>
     
 ##### **Water Quality Monitoring in the NCR**  
@@ -404,7 +405,5 @@ This report summarizes water quality data from `r start_year` to `r myyear` for 
   
 <font size="3">A **printable PDF version** of this page is available in the **[NPS DataStore](https://irma.nps.gov/DataStore/Reference/Profile/2316392)**.</font>
 <br>
+<font size="3">**Download the entire dataset** summarized in this document from the **[NPS DataStore](https://irma.nps.gov/DataStore/Reference/Profile/2317661)**.</font>
 <br>
-
-
-

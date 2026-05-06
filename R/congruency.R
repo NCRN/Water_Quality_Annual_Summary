@@ -1,5 +1,5 @@
 
-congruency <- function(data_filename, metadata_filename) {
+check_congruency <- function(data_filename, metadata_filename) {
   
   problems <- 0
   
@@ -13,7 +13,7 @@ congruency <- function(data_filename, metadata_filename) {
     stop(msg)
   } else {
     msg_beginning <- ""
-    msg_end <- ' exists!'
+    msg_end <- ' exists'
     msg <- paste0(msg_beginning, data_filename, msg_end, '\n')
     cat(msg)
   }
@@ -23,7 +23,7 @@ congruency <- function(data_filename, metadata_filename) {
     stop(msg)
   } else {
     msg_beginning <- ""
-    msg_end <- ' exists!'
+    msg_end <- ' exists'
     msg <- paste0(msg_beginning, metadata_filename, msg_end, '\n')
     cat(msg)
   }
@@ -37,7 +37,7 @@ congruency <- function(data_filename, metadata_filename) {
     stop(msg)
   } else {
     msg_beginning <- ""
-    msg_end <- ' is a CSV!'
+    msg_end <- ' is a CSV'
     msg <- paste0(msg_beginning, data_filename, msg_end, '\n')
     cat(msg)
   }
@@ -47,7 +47,7 @@ congruency <- function(data_filename, metadata_filename) {
     stop(msg)
   } else {
     msg_beginning <- ""
-    msg_end <- ' is a CSV!'
+    msg_end <- ' is a CSV'
     msg <- paste0(msg_beginning, metadata_filename, msg_end, '\n')
     cat(msg)
   }
@@ -109,7 +109,7 @@ congruency <- function(data_filename, metadata_filename) {
   } else {
     msg_beginning <- "All column names in "
     msg_end <- ' match NCRNWater metadata format'
-    msg <- paste0(msg_beginning, data_filename, msg_end, '\n')
+    msg <- paste0(msg_beginning, metadata_filename, msg_end, '\n')
     cat(msg)
   }
   
@@ -174,7 +174,7 @@ congruency <- function(data_filename, metadata_filename) {
   }
   
   if (problems == 0){
-    cat('OK to proceed!\n')
+    cat('\nOK to proceed!\n')
   }
   
 }

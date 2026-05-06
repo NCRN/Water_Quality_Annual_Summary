@@ -1,5 +1,36 @@
 ##creating function to paste text
-write_text <- function(df, char, data_wide, data_long) {
+
+increase_decrease <- function(df, char) {
+  txt <- ""
+  
+  if(df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] >= 25) {
+    txt <- "increased considerably"
+    # print("increased considerably")
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 25 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] >= 10) {
+    txt <- "increased"
+    # print("increased")
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 10 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > 0) {
+    txt <- "increased slightly"
+    # print("increased slightly")
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 0 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -10) {
+    txt <- "decreased slightly"
+    # print("decreased slightly")
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] <= -10 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -25) {
+    txt <- "decreased"
+    # print("decreased")
+  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < -25) {
+    txt <- "decreased considerably"
+    # print("decreased considerably")
+  } else if (df$percent_pass.x[df$CharNameShort==char]==df$percent_pass.y[df$CharNameShort==char]) {
+    txt <- "remained the same"
+    # print("remained the same")
+  } 
+  
+  return(txt)
+  
+}
+
+write_text <- function(df, char, data_wide, data_long, mysite, myyear, start_year) {
   
   ##text options
   text1 <- paste("All", data_wide$CharNameLower[data_wide$CharNameShort==char], "measurements at", mysite, "were passing in", myyear, "and the five years prior.", sep=" ")
