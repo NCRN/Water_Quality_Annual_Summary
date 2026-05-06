@@ -13,3 +13,5 @@ renv/
 data/
 archive/
 .Rprofile
+pdfs*
+htmls*
