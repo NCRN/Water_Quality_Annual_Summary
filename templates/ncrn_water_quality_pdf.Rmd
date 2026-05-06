@@ -23,6 +23,8 @@ params:
   Park: "MONO"
   Site: "BUCK"
   Year: "2025"
+  Metadata: ""
+  Data: ""
 ---
 
 ```{r setup, include=FALSE}
@@ -34,22 +36,17 @@ knitr::opts_chunk$set(echo = TRUE)
 ##load packages
 library(dplyr)
 library(ggplot2)
-
+source('R/ph_ex.R')
+source('R/write_text.R')
+source('R/increase_decrease.R')
+source('R/find_first_year.R')
+source('R/find_last_pass.R')
+source('R/find_last_ex.R')
+source('R/parse_metadata.R')
 ```
 
 ```{r meta data, include=F}
-metadata <- read.csv("wqp_ncrnwater_metadata.csv") %>%
-  tidyr::separate(SiteCode, c("Network", "Park", "Site")) %>%
-  ##changing Rock Creek at Dumbarton Oaks to Downstream of Dumbarton Oaks
-  dplyr::mutate(SiteName=case_when(SiteName=="Rock Creek at Dumbarton Oaks"~"Rock Creek Downstream of Dumbarton Oaks",
-                               TRUE~SiteName)) %>%
-  ##creating column specifying karst v non-karst, cold vs warmwater, and nutrient ecoregion
-  dplyr::mutate(karst=case_when(Park=="ANTI" | Park=="HAFE" | Park=="MONO" ~ "karst",
-                         Park!="ANTI" | Park!="HAFE" | Park!="MONO" ~ "non-karst")) %>%
-  dplyr::mutate(nutrient_ecoregion=case_when(Park=="ANTI" | Park=="CATO" | Park=="HAFE" ~ "XI",
-                                      Park!="ANTI" | Park!="CATO" | Park!="HAFE" ~ "IX")) %>%
-  dplyr::mutate(cold_water=case_when(Park=="CATO" ~ "coldwater",
-                              Park!="CATO" ~ "warmwater")) 
+metadata <- parse_metadata(params$Metadata)
   
 ##filtering for park/site
 park <- metadata %>%
@@ -219,9 +216,11 @@ park_merged_long <- park_merged_wide %>%
                          CharacteristicName=="Specific conductance"~4,
                          CharacteristicName=="Total Nitrogen, mixed forms"~5,
                          CharacteristicName=="Total Phosphorus, mixed forms"~6,
-                         CharacteristicName=="Temperature, water"~7)) 
+                         CharacteristicName=="Temperature, water"~7)) %>%
+  dplyr::rename(
+    'Parameter' = 'CharacteristicName'
+  )
 
-colnames(park_merged_long) = c("Parameter", "CharNameShort", "CharNameLower", "major_P_F", "years", "percent_pass", "colors", "x_pos")
 
 ```
 
@@ -269,34 +268,14 @@ site_image <- knitr::include_graphics(file_path)
 <!--automating text-->
 <!--last exceedance/last pass/first record functions (no longer used)-->
 ```{r functions, echo=F, include=F, warning=F}
-##function to find month and year of last exceedance
-find_last_ex <- function(df, char) {
-  
-  print(unique(na.omit(df$month_year[df$Date==max(df$Date[df$pass_fail=="F" & df$CharNameShort==char])])))
-      
-}
+
 
 ##testing function 
 find_last_ex(wq_data_total, "Total phosphorus")
 
 
-##function to find month and year last passing measurement
-find_last_pass <- function(df, char) {
-  
-  print(unique(na.omit(df$month_year[df$Date==max(df$Date[df$pass_fail=="P" & df$CharNameShort==char], na.rm=T)])))
-  
-}
-
 ##testing function
 find_last_pass(wq_data_total, "Total phosphorus")
-
-
-##function to find first year a parameter was recorded
-find_first_year <- function(df, char) {
-  
-  print(min(df$sample_year[df$CharNameShort==char], na.rm=T))
-  
-}
 
 ##testing function
 find_first_year(wq_data_total, "Total nitrogen")
@@ -305,26 +284,6 @@ find_first_year(wq_data_total, "Total nitrogen")
 
 <!--increasing/decreasing % passing function-->
 ```{r increase decrease, echo=F, include=F, warning=F}
-##function to show increase/decrease in % pass and magnitude of change between past and current data 
-increase_decrease <- function(df, char) {
-  
-  if(df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] >= 25) {
-    print("increased considerably")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 25 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] >= 10) {
-    print("increased")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 10 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > 0) {
-    print("increased slightly")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 0 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -10) {
-    print("decreased slightly")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] <= -10 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -25) {
-    print("decreased")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < -25) {
-    print("decreased considerably")
-  } else if (df$percent_pass.x[df$CharNameShort==char]==df$percent_pass.y[df$CharNameShort==char]) {
-    print("remained the same")
-  } 
-  
-}
 
 ##testing function
 increase_decrease(park_merged_wide, "ANC")

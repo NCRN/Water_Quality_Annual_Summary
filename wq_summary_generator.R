@@ -1,46 +1,38 @@
 library(rmarkdown)
 library(purrr)
 library(dplyr)
+source('R/render.R')
+source('R/get_codes.R')
+source('R/congruency.R')
 
-Year<-2025
+# GLOBAL CONSTANTS
+YEAR<-2025
+METADATA <- "wqp_ncrnwater_metadata.csv"
+DATA <- "wqp.csv"
 
-metadata <- read.csv("wqp_ncrnwater_metadata.csv")
-metadata <- metadata %>%
-  filter(IsActive=="True") %>%
-  tidyr::separate(SiteCode, c("Network", "Park", "Site")) %>%
-  dplyr::mutate(code=paste(Park, Site, sep="_"))
+# before running the program,
+# double-check that the data and metadata files match each other
+congruency(DATA, METADATA)
 
-codes <- unique(metadata$code)
+codes <- get_codes(METADATA)
 
 ##PDF versions
-dirname <- paste0('pdfs_',Year)
+dirname <- paste0('pdfs_',YEAR)
 if (dir.exists(dirname)==F){
   dir.create(dirname)
 }
-OutFiles_pdf<-file.path(dirname ,paste0(codes,"_",Year,"_","summary.pdf"))
 
-RenderSummary<-function(Code, File, Year){ 
-  render(input="wq_markdown_2.Rmd", params=list(Park=strsplit(Code, "_")[[1]][1], 
-                                                Site=strsplit(Code, "_")[[1]][2], 
-                                                Year=Year), output_file = File)
-}
+OutFiles<-file.path(dirname ,paste0(codes,"_",YEAR,"_","summary.pdf"))
 
-walk2(.x=codes, .y=OutFiles_pdf, .f=RenderSummary, Year=Year)
+walk2(.x=codes, .y=OutFiles, .f=RenderSummary, Year=YEAR, Metadata_filename=METADATA, Data_filename=DATA, output='pdf')
 
 
 ##HTML versions
-dirname <- paste0('htmls_',Year)
+dirname <- paste0('htmls_',YEAR)
 if (dir.exists(dirname)==F){
   dir.create(dirname)
 }
 
-OutFiles_html<-file.path(dirname ,paste0(codes,"_",Year,"_","summary.html"))
+OutFiles<-file.path(dirname ,paste0(codes,"_",YEAR,"_","summary.html"))
 
-RenderSummary_html<-function(Code, File, Year){ 
-  render(input="wq_markdown_html.Rmd", params=list(Park=strsplit(Code, "_")[[1]][1], 
-                                                Site=strsplit(Code, "_")[[1]][2], 
-                                                Year=Year), output_file = File)
-}
-
-
-walk2(.x=codes, .y=OutFiles_html, .f=RenderSummary_html, Year=Year)
+walk2(.x=codes, .y=OutFiles, .f=RenderSummary, Year=YEAR, Metadata_filename=METADATA, Data_filename=DATA, output='html')

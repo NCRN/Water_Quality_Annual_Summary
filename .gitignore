@@ -3,7 +3,6 @@
 .RData
 .Ruserdata
 *.Rproj
-*.csv
 *.pdf
 wq_markdown.Rmd
 *.jpg
@@ -11,4 +10,6 @@ wq_markdown.Rmd
 *.pptx
 *.html
 renv/
+data/
+archive/
 .Rprofile

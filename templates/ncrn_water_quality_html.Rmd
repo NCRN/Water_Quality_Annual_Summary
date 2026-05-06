@@ -7,6 +7,8 @@ params:
   Park: "ROCR"
   Site: "BAKE"
   Year: "2025"
+  Metadata: ""
+  Data: ""
 ---
 
 ```{r setup, include=FALSE}
@@ -20,69 +22,19 @@ library(dplyr)
 library(ggplot2)
 source('R/ph_ex.R')
 source('R/write_text.R')
+source('R/increase_decrease.R')
+source('R/find_first_year.R')
+source('R/find_last_pass.R')
+source('R/find_last_ex.R')
+source('R/image_alt_text.R')
+source('R/parse_metadata.R')
 ```
 
 ```{r meta data, include=F}
-metadata <- read.csv("wqp_ncrnwater_metadata.csv") %>%
-  tidyr::separate(SiteCode, c("Network", "Park", "Site")) %>%
-  ##changing Rock Creek at Dumbarton Oaks to Downstream of Dumbarton Oaks
-  dplyr::mutate(SiteName=case_when(SiteName=="Rock Creek at Dumbarton Oaks"~"Rock Creek Downstream of Dumbarton Oaks",
-                               TRUE~SiteName)) %>%
-  ##creating column specifying karst v non-karst, cold vs warmwater, and nutrient ecoregion
-  dplyr::mutate(karst=case_when(Park=="ANTI" | Park=="HAFE" | Park=="MONO" ~ "karst",
-                         Park!="ANTI" | Park!="HAFE" | Park!="MONO" ~ "non-karst")) %>%
-  dplyr::mutate(nutrient_ecoregion=case_when(Park=="ANTI" | Park=="CATO" | Park=="HAFE" ~ "XI",
-                                      Park!="ANTI" | Park!="CATO" | Park!="HAFE" ~ "IX")) %>%
-  dplyr::mutate(cold_water=case_when(Park=="CATO" ~ "coldwater",
-                              Park!="CATO" ~ "warmwater")) 
+metadata <- parse_metadata(params$Metadata)
 
 ##writing image alt text
-image_info <- metadata %>%
-  mutate(file_name=paste(Park, Site, sep="_")) %>%
-  select(file_name) %>%
-  distinct() %>%
-  mutate(alt_text=case_when(file_name=="ANTI_SHCK"~"Leafy branches partially obscure a wide stream that runs under a concrete overpass.",
-                            file_name=="CATO_BGHC"~"A wide stream filled with large rocks and surrounded by green trees.",
-                            file_name=="CATO_BLBZ"~"A forest stream with rocky banks retreats under a fenced walking path.",
-                            file_name=="CATO_OWCK"~"A stream filled with rocks and surrounded by grass and trees flows under a small bridge.",
-                            file_name=="GWMP_MICR"~"A stream filled with large rocks and woody debris, and surrounded by leafy plants and bare trees flows under a tall bridge.",
-                            file_name=="GWMP_MIRU"~"A wide, shallow stream filled with rocks and surrounded by standing and fallen trees flows under a road in the distance.",
-                            file_name=="GWMP_PIRU"~"A stream filled with large rocks surrouned by green plants and trees.",
-                            file_name=="GWMP_TURU"~"A stream, with rocky banks retreats into the distance.",
-                            file_name=="HAFE_FLSP"~"A stream retreats into the distance in a lush green forest.",
-                            file_name=="MANA_YOBR"~"A wide stream with muddy water retreats into the distance, with some bare tree trunks along its banks.",
-                            file_name=="MONO_BUCK"~"A wide stream surrounded by a sloping, rocky bank on the left, a grassy bank on the right, and bare trees flows around a bend.",
-                            file_name=="MONO_GAMI"~"A shallow stream with a pile of seidment in the middle surrounded by bare trees and patchy grass on the stream bank.",
-                            file_name=="NACE_HECR"~"A wide stream surrounded by lush green shrubs and trees.",
-                            file_name=="NACE_OXRU"~"A wide stream in an open field surrounded by grass on the left and tan pebbles on the right, with trees in the distance.",
-                            file_name=="NACE_STCK"~"A small stream surrounded by sediment, pebbles, and grass on the right side, and plants and trees on the left side.",
-                            file_name=="PRWI_BONE"~"A narrow stream surrounded by sparse bare trees, brown leaves on the ground, and some mosses on the stream bank.",
-                            file_name=="PRWI_CARU"~"A narrow stream filled with sediment and surrounded by green plants. Multiple fallen or leaning trees lay across the stream.",
-                            file_name=="PRWI_MARU"~"A narrow stream flows through a forest of trees with sparse or no leaves.",
-                            file_name=="PRWI_MBBR"~"A narrow stream filled with rocks flows through a lush, green forest.",
-                            file_name=="PRWI_NFQC"~"A wide stream surrounded by bare trees and some green plants flows around a bend.",
-                            file_name=="PRWI_ORRU"~"A narrow stream surrounded by grass, dead leaves, and a bare tree flows into a small pond.",
-                            file_name=="PRWI_SFQC"~"A wide stream surrounded by lush green trees",
-                            file_name=="PRWI_SORU"~"A wide stream surrounded by bare trees and some shrubs.",
-                            file_name=="PRWI_TARU"~"A shallow, narrow stream surrounded by green trees and plants flows into a culvert.",
-                            file_name=="ROCR_BAKE"~"A shallow stream filled with rocks and surrounded by green trees.",
-                            file_name=="ROCR_BRBR"~"A wide stream filled with rocks surrounded by a stone wall on the right, a hill on the left, and bare trees flows under a bridge road.",
-                            file_name=="ROCR_DUOA"~"A narrow stream filled with rocks and woody debris, surrounded by a sandy and muddy stream bank, flows through a green forest.",
-                            file_name=="ROCR_FEBR"~"A wide stream filled with rocks and surrounded by green plants and trees.",
-                            file_name=="ROCR_KLVA"~"A rocky stream with a wall and fence to the right surrounded by lush green plants and trees.",
-                            file_name=="ROCR_LUBR"~"A rocky stream surrounded by lush green plants and trees.",
-                            file_name=="ROCR_NOST"~"A wide, rocky stream surrounded by trees with sparse or no leaves and fallen leaves on the ground flows under a small bridge.",
-                            file_name=="ROCR_PHBR"~"A rocky sream surrounded by lush green plants and trees.",
-                            file_name=="ROCR_PYBR"~"A rocky stream surrounded by lush green plants and trees flows under a tall, green bridge.",
-                            file_name=="ROCR_R630"~"A rocky stream surrounded by lush green plants and trees.",
-                            file_name=="ROCR_ROC3"~"A wide stream with large rocks surrounded by trees.",
-                            file_name=="WOTR_CHCK"~"A wide stream runs through a forest of leaning green trees.",
-                            file_name=="WOTR_WOTR"~"A wide stream surrounded by bare trees and some green plants and mosses.",
-                            TRUE~""))
-
-
-
-
+image_info <- image_alt_text(metadata, Park, Site)
   
 ##filtering for park/site
 park <- metadata %>%
@@ -260,41 +212,19 @@ park_merged_long <- park_merged_wide %>%
                          CharacteristicName=="Specific conductance"~4,
                          CharacteristicName=="Total Nitrogen, mixed forms"~5,
                          CharacteristicName=="Total Phosphorus, mixed forms"~6,
-                         CharacteristicName=="Temperature, water"~7)) 
-
-colnames(park_merged_long) = c("Parameter", "CharNameShort", "CharNameLower", "major_P_F", "years", "percent_pass", "colors", "x_pos")
+                         CharacteristicName=="Temperature, water"~7)) %>%
+  dplyr::rename(
+    'Parameter' = 'CharacteristicName'
+  )
 
 ```
 
 ```{r functions, echo=F, include=F, warning=F}
-##function to find month and year of last exceedance
-find_last_ex <- function(df, char) {
-  
-  print(unique(na.omit(df$month_year[df$Date==max(df$Date[df$pass_fail=="F" & df$CharNameShort==char])])))
-      
-}
-
 ##testing function 
 find_last_ex(wq_data_total, "Total phosphorus")
 
-
-##function to find month and year last passing measurement
-find_last_pass <- function(df, char) {
-  
-  print(unique(na.omit(df$month_year[df$Date==max(df$Date[df$pass_fail=="P" & df$CharNameShort==char], na.rm=T)])))
-  
-}
-
 ##testing function
 find_last_pass(wq_data_total, "Total phosphorus")
-
-
-##function to find first year a parameter was recorded
-find_first_year <- function(df, char) {
-  
-  print(min(df$sample_year[df$CharNameShort==char], na.rm=T))
-  
-}
 
 ##testing function
 find_first_year(wq_data_total, "Total nitrogen")
@@ -302,26 +232,6 @@ find_first_year(wq_data_total, "Total nitrogen")
 ```
 
 ```{r increase decrease, echo=F, include=F, warning=F}
-##function to show increase/decrease in % pass and magnitude of change between past and current data 
-increase_decrease <- function(df, char) {
-  
-  if(df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] >= 25) {
-    print("increased considerably")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 25 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] >= 10) {
-    print("increased")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 10 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > 0) {
-    print("increased slightly")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < 0 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -10) {
-    print("decreased slightly")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] <= -10 & df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] > -25) {
-    print("decreased")
-  } else if (df$percent_pass.x[df$CharNameShort==char]-df$percent_pass.y[df$CharNameShort==char] < -25) {
-    print("decreased considerably")
-  } else if (df$percent_pass.x[df$CharNameShort==char]==df$percent_pass.y[df$CharNameShort==char]) {
-    print("remained the same")
-  } 
-  
-}
 
 ##testing function
 increase_decrease(park_merged_wide, "ANC")

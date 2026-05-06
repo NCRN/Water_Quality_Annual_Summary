@@ -28,7 +28,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' make_alt_text(metadata_df, Park = metadata_df$Park, Site = metadata_df$Site)
+#' image_alt_text(metadata_df, Park = metadata_df$Park, Site = metadata_df$Site)
 #' }
 #'
 #' @export
@@ -38,7 +38,7 @@ library(dplyr)
 library(tidyr)
 library(glue)
 
-make_alt_text <- function(metadata, Park, Site) {
+image_alt_text <- function(metadata, Park, Site) {
   # mapping defined once and readable
   alt_map <- tibble::tribble(
     ~file_name,   ~alt_text,
