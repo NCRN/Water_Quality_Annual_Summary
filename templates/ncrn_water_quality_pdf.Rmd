@@ -23,8 +23,8 @@ params:
   Park: "MONO"
   Site: "BUCK"
   Year: "2025"
-  Metadata: ""
-  Data: ""
+  Metadata: "../data/wqp_ncrnwater_metadata.csv"
+  Data: "../data/wqp.csv"
 ---
 
 ```{r setup, include=FALSE}
@@ -36,13 +36,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ##load packages
 library(dplyr)
 library(ggplot2)
-source('R/ph_ex.R')
-source('R/write_text.R')
-source('R/increase_decrease.R')
-source('R/find_first_year.R')
-source('R/find_last_pass.R')
-source('R/find_last_ex.R')
-source('R/parse_metadata.R')
+source('../R/ph_ex.R')
+source('../R/write_text.R')
+source('../R/find_first_year.R')
+source('../R/find_last_pass.R')
+source('../R/find_last_ex.R')
+source('../R/image_alt_text.R')
+source('../R/parse_metadata.R')
 ```
 
 ```{r meta data, include=F}
@@ -82,7 +82,7 @@ colnames(thresholds) <- c("CharacteristicName", "LowerPoint", "UpperPoint", "Uni
                           "karst", "nutrient_ecoregion", "cold_water")
 
 ##loading in water quality data
-wq_data <- read.csv("wqp.csv")
+wq_data <- read.csv(params$Data)
 # wq_data <- read.csv("wqp.csv") %>%
 #   dplyr::mutate(MonitoringLocationName=case_when(MonitoringLocationName=="Battery Kemble Run"~"Battery Kemble Creek",
 #                                                  TRUE~MonitoringLocationName))
