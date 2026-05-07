@@ -70,18 +70,6 @@ check_congruency_user_versus_template <- function(files, results) {
   
   # are the columns present and named properly?
   results <- congruency_helper_column_names(files, files_to_check, results)
-  
-  # TODO: type checking. Check that the columns that NCRNWater needs to be certain formats are actually those types.
-  # e.g., numbers are numeric, dates are formatted properly, factors, characters, etc.
-  # is.numeric(metadata$LowerPoint)
-  # is.numeric(metadata$UpperPoint)
-  # is.numeric(metadata$Lat)
-  # is.numeric(metadata$Long)
-  # parse metadata
-  # metadata %>% dplyr::select(DataName, DataType) %>% dplyr::distinct(DataName, DataType)
-  
-  # TODO: null checking. Check that required columns have values.
-  # e.g., thresholds (metadata$UpperPoint, metadata$LowerPoint) are required because things break otherwise
 
   return(results)
   
@@ -99,6 +87,31 @@ check_congruency_user_versus_user <- function(files, results) {
   
   # are the values in column-pairs consistent?
   results <- congruency_helper_values(files, cols_to_check, results)
+  
+  # TODO: type checking. Check that the columns that NCRNWater needs to be certain formats are actually those types.
+  # e.g., numbers are numeric, dates are formatted properly, factors, characters, etc.
+  # is.numeric(metadata$LowerPoint)
+  # is.numeric(metadata$UpperPoint)
+  # is.numeric(metadata$Lat)
+  # is.numeric(metadata$Long)
+  # parse metadata
+  # metadata %>% dplyr::select(DataName, DataType) %>% dplyr::distinct(DataName, DataType)
+  # does the metadata#DataType agree with data$ResultMeasureValue?
+  # make a lookup for (metadata$DataName, metadata$DataType)
+  # make a table of (data$CharacteristicName, data$ResultMeasureValue)
+  # try to change the column's data type and see what breaks
+  
+  # TODO: null checking. Check that required columns have values.
+  # e.g., thresholds (metadata$UpperPoint, metadata$LowerPoint) are required because things break otherwise
+  # the only column that you're allowed to provide NAs:
+  # LowerPoint, UpperPoint, LowerDescription, UpperDescription
+  # These can't be ALL NAs, but some NAs are allowed
+  
+  # TODO: coverage
+  # are there duplicates in the metadata file
+  # (SiteCode, DataName)
+  # is every combination of (MonitoringLocationIdentifier, CharacteristicName) covered with a combination of (SiteCode, DataName)?
+  
   
   return(results)
   
