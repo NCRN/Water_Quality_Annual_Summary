@@ -86,9 +86,6 @@ check_congruency <- function(data_filename, metadata_filename, data_template='te
   if (results$problems == 0){
     cat(msgs)
     cat('\n')
-    cat(paste0('Values are congruent: ', data_filename,' and ',metadata_filename, '\n'))
-    cat(paste0('Shape and format are congruent: ', data_filename,' and ',data_template, '\n'))
-    cat(paste0('Shape and format are congruent: ', metadata_filename,' and ',metadata_template, '\n'))
     cat('\nOK to proceed!')
   } else {
     cat(msgs)
@@ -114,47 +111,89 @@ check_congruency_user_versus_template <- function(files, results) {
 
 check_congruency_user_versus_user <- function(files, results) {
   
-  # are the site names consistent?
-  # results <- congruency_helper_site_names(files, results)
+  # map each data column to its corresponding metadata column
+  cols_to_check <- list(
+    c('MonitoringLocationIdentifier', 'SiteCode')
+    ,c('MonitoringLocationName', 'SiteName')
+  )
   
-  # are the site codes consistent?
-  # results <- congruency_helper_site_codes(files, results)  
+  # are the values in column-pairs consistent?
+  results <- congruency_helper_values(files, cols_to_check, results)
   
   return(results)
   
 }
 
-congruency_helper_site_names <- function(files, results) {
-  #   # are sites present and named properly?
-  # msg_beginning <- "The site codes in '" 
-  # msg_end <- "' do not match."
-  # if (all(data$MonitoringLocationIdentifier %>% unique %in% metadata$SiteCode %>% unique) == F){
-  #   problems <- problems + 1
-  #   msg <- paste0(msg_beginning, data_filename, msg_end)
-  #   warning(msg)
-  #   data_locs <- data$MonitoringLocationIdentifier %>% unique
-  #   metadata_locs <- metadata$SiteCode %>% unique
-  #   in_metadata_not_data <- which(colnames(data_locs) %in% colnames(metadata_locs) == F)
-  #   in_data_not_metadata <- which(colnames(metadata_locs) %in% colnames(data_locs) == F)
-  #   if (length(in_metadata_not_data)>0){
-  #     msg_beginning <- paste0("These site codes are in ",metadata_filename," but not in ",data_filename,":\n")
-  #     msg_end <- "\n"
-  #     msg <- paste0(msg_beginning, paste(in_metadata_not_data, collapse = ', '), msg_end)
-  #     warning(msg)
-  #   }
-  #   if (length(in_data_not_metadata)>0){
-  #     msg_beginning <- paste0("These site codes are in ",data_filename," but not in ",metadata_filename,":\n")
-  #     msg_end <- "\n"
-  #     msg <- paste0(msg_beginning, paste(in_data_not_metadata, collapse = ', '), msg_end)
-  #     warning(msg)
-  #   }
-  # } else {
-  #   msg_beginning <- "All site codes in "
-  #   msg_end <- ' match the site codes in '
-  #   msg <- paste0(msg_beginning, data_filename, msg_end, metadata_filename, '\n')
-  #   cat(msg)
-  # }
-  # 
+congruency_helper_values <- function(files, cols_to_check, results) {
+  
+  tmp <- list(
+    'msgs' = c()
+    ,problems = 0
+  )
+  
+  # template local variables
+  data_template <- files[['template']][['data']][['df']]
+  data_template_filename <- files[['template']][['data']][['fname']]
+  metadata_template <- files[['template']][['metadata']][['df']]
+  metadata_template_filename <- files[['template']][['metadata']][['fname']]
+  
+  # user local variables
+  data <- files[['user']][['data']][['df']]
+  data_filename <- files[['user']][['data']][['fname']]
+  metadata <- files[['user']][['metadata']][['df']]
+  metadata_filename <- files[['user']][['metadata']][['fname']]
+  
+  for (i in seq_along(cols_to_check)){
+    data_col <- cols_to_check[[i]][1]
+    metadata_col <- cols_to_check[[i]][2]
+    
+    if (any(data[[data_col]] %>% unique %in% metadata[[metadata_col]] %>% unique == F)){
+      
+      msg_beginning <- paste0("\nThe values ", data_filename, "$",data_col, " do not match ")
+      msg_end <- paste0('the values in ', metadata_filename, "$",metadata_col, '\n')
+      msg <- paste0(msg_beginning, msg_end)
+      tmp[['msgs']] <- c(tmp[['msgs']], msg)
+      
+      in_data_not_metadata <- which(data[[data_col]] %>% unique %in% metadata[[metadata_col]] %>% unique == F)
+      in_metadata_not_data <- which(metadata[[metadata_col]] %>% unique %in% data[[data_col]] %>% unique == F)
+      
+      if (length(in_data_not_metadata)>0){
+        values_in_data_not_metadata <- (data[[data_col]] %>% unique)[in_data_not_metadata]
+        msg_beginning <- paste0(length(in_data_not_metadata), " value(s) are in ",data_filename," but not in ",metadata_filename,":\n")
+        msg_end <- "\n"
+        msg <- paste0(msg_beginning, paste(values_in_data_not_metadata, collapse = ', '), msg_end)
+        tmp[['problems']] <- tmp[['problems']] + 1
+        tmp[['msgs']] <- c(tmp[['msgs']], msg)
+      }
+
+      if (length(in_metadata_not_data)>0){
+        values_in_metadata_not_data <- (metadata[[metadata_col]] %>% unique)[in_metadata_not_data]
+        msg_beginning <- paste0(length(in_metadata_not_data), " value(s) are in ",metadata_filename," but not in ",data_filename,":\n")
+        msg_end <- "\n"
+        msg <- paste0(msg_beginning, paste(values_in_metadata_not_data, collapse = ', '), msg_end)
+        tmp[['problems']] <- tmp[['problems']] + 1
+        tmp[['msgs']] <- c(tmp[['msgs']], msg)
+      }
+    }
+  }
+  
+  if (tmp[['problems']]==0){
+    msg_begining <- paste0(length(cols_to_check), ' pairs of columns passed value-congruency checks:\n')
+    msg_middle <- c()
+    for (i in seq_along(cols_to_check)){
+      data_col <- paste0(data_filename, '$',cols_to_check[[i]][1])
+      metadata_col <- paste0(metadata_filename, '$', cols_to_check[[i]][2])
+      msg_tmp <- paste0(data_col, ' matches ', metadata_col)
+      msg_middle <- c(msg_middle, msg_tmp)
+    }
+    msg <- paste0(msg_begining, paste(msg_middle, collapse = '\n'))
+    tmp[['msgs']] <- c(tmp[['msgs']], msg)
+  }
+  
+  results[['problems']] <- results[['problems']] + tmp[['problems']]
+  results[['msgs']] <- c(results[['msgs']], tmp[['msgs']])
+  
+  return(results)
 }
 
 check_congruency_files_exist <- function(files, results) {
@@ -206,7 +245,6 @@ check_congruency_files_are_csvs <- function(files, results) {
   results[['msgs']] <- c(results[['msgs']], tmp[['msgs']])
   return(results)
 }
-
 
 congruency_helper_column_names <- function(files, results) {
   
@@ -266,7 +304,7 @@ congruency_helper_column_names <- function(files, results) {
   } else {
     msg_beginning <- "The column names in "
     msg_end <- paste0(' are the same as those in ', data_template_filename, '\n')
-    msg <- paste0(msg_beginning, data_filename, msg_end)
+    msg <- paste0('\n',msg_beginning, data_filename, msg_end)
     tmp[['msgs']] <- c(tmp[['msgs']], msg)
   }
   
