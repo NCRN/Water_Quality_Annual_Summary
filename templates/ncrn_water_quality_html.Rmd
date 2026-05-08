@@ -402,8 +402,5 @@ This report summarizes water quality data from `r start_year` to `r myyear` for 
 
 ::::::::::::::
   
-  
-<font size="3">A **printable PDF version** of this page is available in the **[NPS DataStore](https://irma.nps.gov/DataStore/Reference/Profile/2316392)**.</font>
-<br>
 <font size="3">**Download the entire dataset** summarized in this document from the **[NPS DataStore](https://irma.nps.gov/DataStore/Reference/Profile/2317661)**.</font>
 <br>
