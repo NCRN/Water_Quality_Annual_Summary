@@ -16,4 +16,4 @@ archive/
 pdfs*
 htmls*
 sandbox.R
-
+*.tex
