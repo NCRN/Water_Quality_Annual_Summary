@@ -386,7 +386,7 @@ icon <- function(df) {
 ##### **Total Phosphorus** `r icon(park_data_current[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms",])`  
 **Acceptable values:** Below `r park_data_current$UpperPoint[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
 **`r myyear` range:** `r park_data_current$min[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` – `r park_data_current$max[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]` `r park_data_current$unit[park_data_current$CharacteristicName=="Total Phosphorus, mixed forms"]`  
-`r write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long, mysite, myyear, start_year)`.  
+`r write_text(wq_data_total, "Total phosphorus", park_merged_wide, park_merged_long, mysite, myyear, start_year)`  
 <br>
   
 ##### **Water Temperature**`r icon(park_data_current[park_data_current$CharacteristicName=="Temperature, water",])`    
