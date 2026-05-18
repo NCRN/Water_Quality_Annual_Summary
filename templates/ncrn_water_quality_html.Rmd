@@ -131,8 +131,8 @@ wq_data_total <- merge(wq_data1, thresholds,
                                      CharNameShort=="Total phosphorus"~"total phosphorus",
                                      TRUE~CharNameShort)) %>%
   ##creating pass/fail column
-  dplyr::mutate(pass_fail=case_when(ResultMeasureValue>=UpperPoint~"F",
-                             ResultMeasureValue<=LowerPoint~"F",
+  dplyr::mutate(pass_fail=case_when(ResultMeasureValue>UpperPoint~"F",
+                             ResultMeasureValue<LowerPoint~"F",
                              TRUE~"P")) %>%
   ##calculating percent pass for each parameter per sampling year
   dplyr::group_by(CharacteristicName, sample_year) %>%
